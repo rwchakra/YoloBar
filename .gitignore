@@ -131,3 +131,7 @@ dmypy.json
 
 # Filetypes
 *.json
+*.txt
+
+# Folders
+data/raw
