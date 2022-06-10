@@ -57,7 +57,7 @@ for image_filename in tqdm.tqdm(train_images):
     # print(f"Length of the Recipients: {len(recipients)}")
 
     # Objects to anonymise
-    objs_anon = [invoices, recipients]
+    objs_anon = [invoices, recipients, senders]
 
     # Go through these objects
     for labels in objs_anon:
@@ -83,7 +83,7 @@ for image_filename in tqdm.tqdm(train_images):
     img_array_tmp = np.copy(img_array)
     
     # Objects to keep
-    objs_keep = [barcodes, senders]
+    objs_keep = [barcodes]
     
     # Go through these objects
     for labels in objs_keep:
