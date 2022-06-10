@@ -1,6 +1,7 @@
 # Imports
 import os
 import numpy as np 
+import cv2
 
 
 
@@ -28,3 +29,24 @@ def convert_lbox_coords(coords_list):
 
 
     return new_coords
+
+
+
+# Function: Blur sensitive area
+def apply_blurring(img_array, kernel_size=(15, 15)):
+
+    # Randomly get the blurring type
+    blur_type = np.random.choice(["average", "gaussian", "median"])
+
+    if blur_type == "average":
+        blurred = cv2.blur(img_array, kernel_size)
+    
+    elif blur_type == "gaussian":
+        blurred = cv2.GaussianBlur(img_array, kernel_size, 0)
+    
+    elif blur_type == "median":
+        k = kernel_size[0]
+        blurred = cv2.medianBlur(img_array, k)
+
+
+    return blurred

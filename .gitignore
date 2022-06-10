@@ -136,3 +136,4 @@ dmypy.json
 # Folders
 data/raw
 data/json
+data/processed
