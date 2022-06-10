@@ -51,6 +51,7 @@ for image_filename in tqdm.tqdm(train_images):
     img_annotations = json_data[image_filename]
     barcodes = img_annotations['barcode']
     invoices = img_annotations['invoice']
+    senders = img_annotations['sender']
     recipients = img_annotations['recipient']
     # print(f"Length of the Invoices: {len(invoices)}")
     # print(f"Length of the Recipients: {len(recipients)}")
@@ -81,17 +82,23 @@ for image_filename in tqdm.tqdm(train_images):
     # Create a new fresh copy of the image array
     img_array_tmp = np.copy(img_array)
     
-    # Go through barcodes
-    for coords_list in barcodes:
-            
-        # Get 2D indices
-        ymin, xmin, ymax, xmax = coords_list[0], coords_list[1], coords_list[2], coords_list[3]
+    # Objects to keep
+    objs_keep = [barcodes, senders]
+    
+    # Go through these objects
+    for labels in objs_keep:
+        
+        # Iterate through each list
+        for coords_list in labels:
+                
+            # Get 2D indices
+            ymin, xmin, ymax, xmax = coords_list[0], coords_list[1], coords_list[2], coords_list[3]
 
-        # Get the barcode slices
-        bcode_slice = img_array_tmp[int(ymin):int(ymax), int(xmin):int(xmax)].copy()
+            # Get the barcode slices
+            bcode_slice = img_array_tmp[int(ymin):int(ymax), int(xmin):int(xmax)].copy()
 
-        # Apply to processed image array
-        img_array_proc[int(ymin):int(ymax), int(xmin):int(xmax)] = bcode_slice
+            # Apply to processed image array
+            img_array_proc[int(ymin):int(ymax), int(xmin):int(xmax)] = bcode_slice
 
 
     # Re-convert image array into PIL Image
