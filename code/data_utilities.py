@@ -18,9 +18,15 @@ class LoggiPackageDataset(Dataset):
         # Initialise variables
         self.data_dir = data_dir
         self.transforms = transforms
+        self.training = training
 
         # Load JSON file in the data directory
-        json_file = os.path.join(self.data_dir, "json", "train.json")
+        if self.training:
+            json_file = os.path.join(self.data_dir, "json", "train.json")
+        
+        else:
+            json_file = os.path.join(self.data_dir, "json", "test.json")
+
 
         # Open JSON file
         with open(json_file, 'r') as j:
@@ -33,57 +39,75 @@ class LoggiPackageDataset(Dataset):
         self.images = list(json_data.keys())
 
         # Add the "json_data" variable to the class variables
-        self.label_dict = json_data.copy()
+        self.label_dict = json_data.copy() if self.training else None
 
 
     # Method: __getitem__
     def __getitem__(self, idx):
+
+        # Mode
+        if self.training:
         
-        # Get image data
-        image_fname = self.images[idx]
-        img_path = os.path.join(self.data_dir, "processed", "train", image_fname)
-        image = Image.open(img_path).convert('RGB')
+            # Get image data
+            image_fname = self.images[idx]
+            img_path = os.path.join(self.data_dir, "processed", "train", image_fname)
+            image = Image.open(img_path).convert('RGB')
 
 
-        # Get label data
-        boxes = self.label_dict[image_fname]['barcode']
+            # Get label data
+            boxes = self.label_dict[image_fname]['barcode']
+            
+            # Number of barcodes
+            n_objs = len(boxes)
+
+            # Bounding boxes
+            if n_objs > 0:
+                boxes = torch.as_tensor(boxes, dtype=torch.float32)
+            else:
+                boxes = torch.zeros((0, 4), dtype=torch.float32)
+            
+            # TODO: Labels (do we need this?)
+            labels = torch.ones((n_objs,), dtype=torch.int64)
+            
+            # TODO: Image Index (do we need this?)
+            image_idx = torch.tensor([idx])
+            
+            # TODO: Area (do we need this?)
+            area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+            
+            # TODO: Suppose all instances are not crowd (do we need this?)
+            iscrowd = torch.zeros((n_objs,), dtype=torch.int64)        
+
+
+            # Target (dictionary)
+            target = dict()
+            target["boxes"] = boxes
+            target["labels"] = labels
+            target["image_idx"] = image_idx
+            target["area"] = area
+            target["iscrowd"] = iscrowd
+
+
+            # TODO: Review transforms to image data and labels (albumentations?)
+            if self.transforms:
+                image = self.transforms(image)
+            
+
+            return image, target
         
-        # Number of barcodes
-        n_objs = len(boxes)
 
-        # Bounding boxes
-        if n_objs > 0:
-            boxes = torch.as_tensor(boxes, dtype=torch.float32)
         else:
-            boxes = torch.zeros((0, 4), dtype=torch.float32)
-        
-        # TODO: Labels (do we need this?)
-        labels = torch.ones((n_objs,), dtype=torch.int64)
-        
-        # TODO: Image Index (do we need this?)
-        image_idx = torch.tensor([idx])
-        
-        # TODO: Area (do we need this?)
-        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
-        
-        # TODO: Suppose all instances are not crowd (do we need this?)
-        iscrowd = torch.zeros((n_objs,), dtype=torch.int64)        
 
+            # Get image data
+            image_fname = self.images[idx]
+            img_path = os.path.join(self.data_dir, "processed", "test", image_fname)
+            image = Image.open(img_path).convert('RGB')
 
-        # Target (dictionary)
-        target = dict()
-        target["boxes"] = boxes
-        target["labels"] = labels
-        target["image_idx"] = image_idx
-        target["area"] = area
-        target["iscrowd"] = iscrowd
+            if self.transforms:
+                image = self.transforms(image)
+            
 
-
-        # TODO: Review transforms to image data and labels (albumentations?)
-        if self.transforms:
-            image = self.transforms(image)
-        
-        return image, target
+            return image
 
 
     # Method: __len__
@@ -93,7 +117,7 @@ class LoggiPackageDataset(Dataset):
 
 
 # Run this file to test the Dataset class
-if __name__=="__main__":
+if __name__ == "__main__":
     
     # Create a LoggiPackageDataset instance
     train_transforms = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
@@ -105,3 +129,5 @@ if __name__=="__main__":
     # Iterate through DataLoader
     for images, targets in train_loader:
         print(targets)
+
+        break
