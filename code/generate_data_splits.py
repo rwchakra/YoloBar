@@ -14,7 +14,7 @@ from utilities import convert_lbox_coords
 
 # Directories and Files
 data = "data"
-json_file = os.path.join(data, "good_quality_imgs.json")
+json_file = os.path.join(data, "json", "good_quality_imgs.json")
 
 
 # Open JSON file

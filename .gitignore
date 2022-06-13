@@ -137,3 +137,5 @@ dmypy.json
 data/raw
 data/json
 data/processed
+data/masks
+code/yolov5_obb
