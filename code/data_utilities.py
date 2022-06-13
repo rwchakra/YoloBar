@@ -1,6 +1,7 @@
 # Imports
 import os
 import json
+import random
 import numpy as np
 from PIL import Image
 
@@ -8,6 +9,79 @@ from PIL import Image
 import torch
 from torch.utils.data import Dataset, DataLoader
 import torchvision
+from torchvision.transforms import functional as F
+
+
+
+# Function: collate_fn
+def collate_fn(batch):
+    return tuple(zip(*batch))
+
+
+
+# Class: (Homebrew) Compose
+class Compose(object):
+    def __init__(self, transforms):
+        self.transforms = transforms
+
+    def __call__(self, image, target):
+        for t in self.transforms:
+            image, target = t(image, target)
+        
+        return image, target
+
+
+
+# Class: (Homebrew) RandomHorizontalFlip
+class RandomHorizontalFlip(object):
+    def __init__(self, prob):
+        self.prob = prob
+
+    def __call__(self, image, target):
+        if random.random() < self.prob:
+            height, width = image.shape[-2:]
+            image = image.flip(-1)
+            
+            # Boxes
+            bbox = target["boxes"]
+            bbox[:, [0, 2]] = width - bbox[:, [2, 0]]
+            target["boxes"] = bbox
+
+            # Masks
+            target["masks"] = target["masks"].flip(-1)
+
+        return image, target
+
+
+
+# Class: (Homebrew) ToTensor
+class ToTensor(object):
+    def __call__(self, image, target):
+        image = F.to_tensor(image)
+        
+        return image, target
+
+
+
+# Function: Create a Compose of data transforms (for training)
+def get_train_transform():
+    transforms = []
+    # converts the image, a PIL image, into a PyTorch Tensor
+    transforms.append(ToTensor())
+    
+    # during training, randomly flip the training images
+    # and ground-truth for data augmentation
+    transforms.append(RandomHorizontalFlip(0.5))
+    
+
+    return Compose(transforms)
+
+
+
+# Function: Create a Compose of data transforms (for evaluation, i.e., validation or test)
+def get_eval_transform():
+    # in case you want to insert some transformation in here
+    return torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 
 
 
@@ -22,10 +96,10 @@ class LoggiPackageDataset(Dataset):
 
         # Load JSON file in the data directory
         if self.training:
-            json_file = os.path.join(self.data_dir, "json", "train.json")
+            json_file = os.path.join(self.data_dir, "json", "challenge", "train_challenge.json")
         
         else:
-            json_file = os.path.join(self.data_dir, "json", "test.json")
+            json_file = os.path.join(self.data_dir, "json", "challenge", "test_challenge.json")
 
 
         # Open JSON file
@@ -54,28 +128,38 @@ class LoggiPackageDataset(Dataset):
             image = Image.open(img_path).convert('RGB')
 
 
-            # Get label data
-            boxes = self.label_dict[image_fname]['barcode']
+            # Get annotation data
+            # Boxes
+            boxes = self.label_dict[image_fname]['boxes']
             
-            # Number of barcodes
+            # Number of Boxes
             n_objs = len(boxes)
 
-            # Bounding boxes
+            
             if n_objs > 0:
                 boxes = torch.as_tensor(boxes, dtype=torch.float32)
             else:
                 boxes = torch.zeros((0, 4), dtype=torch.float32)
+
             
-            # TODO: Labels (do we need this?)
-            labels = torch.ones((n_objs,), dtype=torch.int64)
+            # Labels
+            labels = self.label_dict[image_fname]['labels']
+            labels = torch.as_tensor(labels, dtype=torch.int64)
+
+            # Masks
+            masks = self.label_dict[image_fname]['masks']
+            masks = [np.asarray(Image.open(os.path.join(self.data_dir, "masks", "train", image_fname.split('.')[0], m)).convert("L")) for m in masks]
+            masks = torch.as_tensor(masks, dtype=torch.uint8)
+            # Remove channel dimension
+            masks = masks.squeeze(0)
             
-            # TODO: Image Index (do we need this?)
+            # Image Index
             image_idx = torch.tensor([idx])
             
-            # TODO: Area (do we need this?)
+            # Area (do we need this?)
             area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
             
-            # TODO: Suppose all instances are not crowd (do we need this?)
+            # Suppose all instances are not crowd (do we need this?)
             iscrowd = torch.zeros((n_objs,), dtype=torch.int64)        
 
 
@@ -83,6 +167,7 @@ class LoggiPackageDataset(Dataset):
             target = dict()
             target["boxes"] = boxes
             target["labels"] = labels
+            target["masks"] = masks
             target["image_idx"] = image_idx
             target["area"] = area
             target["iscrowd"] = iscrowd
@@ -90,18 +175,21 @@ class LoggiPackageDataset(Dataset):
 
             # TODO: Review transforms to image data and labels (albumentations?)
             if self.transforms:
-                image = self.transforms(image)
+                image, target = self.transforms(image, target)
             
 
             return image, target
         
 
+        # TODO: Finish script so it can be used with validation as well
         else:
 
             # Get image data
             image_fname = self.images[idx]
-            img_path = os.path.join(self.data_dir, "processed", "test", image_fname)
+            img_path = os.path.join(self.data_dir, "raw", image_fname)
             image = Image.open(img_path).convert('RGB')
+
+            masks = [np.asarray(Image.open(os.path.join(self.data_dir, "masks", "test", image_fname.split('.')[0], m)).convert("L")) for m in masks]
 
             if self.transforms:
                 image = self.transforms(image)
@@ -120,14 +208,32 @@ class LoggiPackageDataset(Dataset):
 if __name__ == "__main__":
     
     # Create a LoggiPackageDataset instance
-    train_transforms = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+    train_transforms = get_train_transform()
     train_set = LoggiPackageDataset(data_dir="data", transforms=train_transforms)
 
     # Create a DataLoader
-    train_loader = DataLoader(dataset=train_set)
+    batch_size = 5
+    train_loader = DataLoader(dataset=train_set, batch_size=batch_size, collate_fn=collate_fn)
 
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+    
     # Iterate through DataLoader
     for images, targets in train_loader:
-        print(targets)
+        
+        # Get images
+        images_ = list(image.to(device) for image in images)
+        targets_ = [{k: v.to(device) for k, v in t.items()} for t in targets]
+
+        print(images_, targets_)
+        
+        for i in range(batch_size):
+            print(f"i: {i}")
+            print(f"Images (shape): {images_[i].shape}")
+            print(f"Boxes (shape): {targets_[i]['boxes'].shape}")
+            print(f"Labels (shape): {targets_[i]['labels'].shape}")
+            print(f"Masks (shape): {targets_[i]['masks'].shape}")
+            print(f"Image Indices: {targets_[i]['image_idx']}")
+            print(f"Area of the objects: {targets_[i]['area']}")
+            print(f"Is crowd: {targets_[i]['iscrowd']}")
 
         break
