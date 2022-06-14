@@ -1,6 +1,7 @@
 # Imports
 import os
 import tqdm
+import numpy as np
 
 # PyTorch Imports
 import torch
@@ -35,8 +36,9 @@ dataset_notransforms = LoggiPackageDataset(data_dir=DATA_DIR, training=True, tra
 
 # Split the dataset into train and validation sets
 indices = torch.randperm(len(dataset)).tolist()
-train_set = torch.utils.data.Subset(dataset, indices[:-299])
-val_set = torch.utils.data.Subset(dataset_notransforms, indices[-299:])
+# train_set = torch.utils.data.Subset(dataset, indices[:-299])
+train_set = torch.utils.data.Subset(dataset, indices[:2])
+val_set = torch.utils.data.Subset(dataset_notransforms, indices[2:4])
 
 # DataLoaders
 # Define batch size
@@ -72,8 +74,6 @@ optimizer = torch.optim.SGD(model_params, lr=0.005, momentum=0.9, weight_decay=0
 # Define the number of epochs
 NUM_EPOCHS = 1
 
-# Define model name to save
-MODEL_NAME = "visum2022test"
 
 # Start the training and validation loops
 for epoch in range(NUM_EPOCHS):
@@ -87,7 +87,7 @@ for epoch in range(NUM_EPOCHS):
 
 
     # Go through train loader
-    for images, targets in tqdm.tqdm(train_loader):
+    for images, targets, _ in tqdm.tqdm(train_loader):
         
         # Load data
         images = list(image.to(DEVICE) for image in images)
@@ -117,25 +117,27 @@ for epoch in range(NUM_EPOCHS):
     predictions = list()
 
     # Go through validation loader
-    for images, targets in tqdm.tqdm(val_loader):
+    for images, targets, image_fnames in tqdm.tqdm(val_loader):
 
         # Load data
-        image = list(img.to(DEVICE) for img in image)
-        outputs = model(image)
+        images = list(img.to(DEVICE) for img in images)
+        targets_ = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
+        image_fnames_ = [f for f in image_fnames]
+        outputs = model(images, targets)
 
 
         # Add to ground truth list
-        for out, t in zip(outputs, targets):
+        for out, t, fname in zip(outputs, targets_, image_fnames_):
             gt_boxes = list()
 
             for bb in t["boxes"]:
                 gt_boxes.append(list(bb.detach().cpu().numpy()))
             
-            ground_truth.append(gt_boxes)
+            ground_truth.append([fname, gt_boxes])
 
 
             for bb, score in zip(out["boxes"], out["scores"]):
-                predictions.append([list(bb.detach().cpu().numpy()), float(score.detach().cpu())])
+                predictions.append([fname, list(bb.detach().cpu().numpy()), float(score.detach().cpu())])
     
 
     # Compute validation metrics
@@ -148,9 +150,9 @@ for epoch in range(NUM_EPOCHS):
 
 
 
-    torch.save(model.state_dict(), os.path.join(SAVE_MODEL_DIR, f"{MODEL_NAME}"))
+    torch.save(model, os.path.join(SAVE_MODEL_DIR, "visum2022.pt"))
 
-    print(f"Model successfully saved at {os.path.join(SAVE_MODEL_DIR, f'{MODEL_NAME}.pt')}")
+    print(f"Model successfully saved at {os.path.join(SAVE_MODEL_DIR, 'visum2022.pt')}")
 
 
 print("Finished.")

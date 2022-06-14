@@ -155,9 +155,6 @@ class LoggiPackageDataset(Dataset):
             masks = [np.asarray(Image.open(os.path.join(self.data_dir, "masks", "train", image_fname.split('.')[0], m)).convert("L")) for m in masks]
             masks = [(m > 0).astype(np.uint8) for m in masks]
             masks = torch.as_tensor(masks, dtype=torch.uint8)
-            # TODO: Check this
-            # Remove channel dimension
-            # masks = masks.squeeze(0)
             
             # Image Index
             image_idx = torch.tensor([idx])
@@ -174,20 +171,19 @@ class LoggiPackageDataset(Dataset):
             target["boxes"] = boxes
             target["labels"] = labels
             target["masks"] = masks
-            target["image_idx"] = image_idx
             target["area"] = area
             target["iscrowd"] = iscrowd
 
 
-            # TODO: Review transforms to image data and labels (albumentations?)
+            # Apply transforms to both image and target
             if self.transforms:
                 image, target = self.transforms(image, target)
             
 
-            return image, target
+            return image, target, image_fname
         
 
-        # TODO: Finish script so it can be used with test set as well
+
         else:
 
             # Get image data
@@ -195,13 +191,14 @@ class LoggiPackageDataset(Dataset):
             img_path = os.path.join(self.data_dir, "raw", image_fname)
             image = Image.open(img_path).convert('RGB')
 
-            masks = [np.asarray(Image.open(os.path.join(self.data_dir, "masks", "test", image_fname.split('.')[0], m)).convert("L")) for m in masks]
+            # For model purposes
+            target = list()
 
             if self.transforms:
                 image = self.transforms(image)
             
 
-            return image
+            return image, target, image_fname
 
 
     # Method: __len__
@@ -224,7 +221,7 @@ if __name__ == "__main__":
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     
     # Iterate through DataLoader
-    for images, targets in train_loader:
+    for images, targets, image_fname in train_loader:
         
         # Get images
         images_ = list(image.to(device) for image in images)
@@ -238,7 +235,7 @@ if __name__ == "__main__":
             print(f"Boxes (shape): {targets_[i]['boxes'].shape}")
             print(f"Labels (shape): {targets_[i]['labels'].shape}")
             print(f"Masks (shape, min, max): {targets_[i]['masks'].shape}, {torch.min(targets_[i]['masks'])}, {torch.max(targets_[i]['masks'])}")
-            print(f"Image Indices: {targets_[i]['image_idx']}")
+            print(f"Image Filename: {image_fname}")
             print(f"Area of the objects: {targets_[i]['area']}")
             print(f"Is crowd: {targets_[i]['iscrowd']}")
 

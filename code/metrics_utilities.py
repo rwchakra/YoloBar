@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 import copy
-import csv
+import json
 import sys
 
 
@@ -33,39 +33,59 @@ def IOU(box1, box2):
 
 # Function: Compute AP, from https://towardsdatascience.com/breaking-down-mean-average-precision-map-ae462f623a52#1a59
 def compute_AP(preds_list, labels_dict, iou_level=0.5):
+    
+    # Create two lists for precision and recall values
     precision = list()
     recall = list()
-    # copy the labels dict since we gonna edit it
+    
+    # Copy the labels dict since we gonna edit it
     labels_dict = copy.deepcopy(labels_dict)
-    # Initialize True positives and False positives to zero
+    
+    # Initialize true positives (TP) and false positives (FP) to zero
     TP = FP = 0
+    
     # The total number of positives = (TP + FN) which is constant if we fix labels_dict
-    Total_positives = sum([len(x[1]) for x in labels_dict.items()])
-    # sort predictions by their score
-    preds_list = sorted(preds_list, key=lambda x:x[3], reverse=True)
-    for seq, frame, box, score in preds_list:
-        if (seq, frame) not in labels_dict.keys():
+    total_positives = sum([len(x[1]) for x in labels_dict.items()])
+    
+
+    # Sort predictions by their score
+    preds_list = sorted(preds_list, key=lambda x:x[2], reverse=True)
+    
+    # Go through predictions
+    for image_fname, box, score in preds_list:
+        
+        # Check if we have a prediction for all test images
+        if image_fname not in labels_dict.keys():
             FP += 1
             continue
 
-        possible_matches = labels_dict[seq, frame]
+
+        # Check if we have possible matches
+        possible_matches = labels_dict[image_fname]
         if len(possible_matches) == 0:
             FP+=1
             continue        
 
+
+        # Compute IoU for all the boxes
         ious_elems = [(IOU(box, x), x) for x in possible_matches]
         ious_elems = sorted(ious_elems, key=lambda x:x[0], reverse=True)
-        #top_match
+        
+        # Select the top_match
         iou, elem = ious_elems[0]
+        
+        # Check the IoU threshold
         if iou >= iou_level:
             TP += 1
-            labels_dict[seq, frame].remove(elem)
+            labels_dict[image_fname].remove(elem)
             precision.append(TP/(TP+FP))
-            recall.append(TP/Total_positives)
+            recall.append(TP/total_positives)
+        
         else:
             FP += 1
     
-    # max to the right
+
+    # TODO: (Study this!) Max to the right
     max_to_the_right = 0
     for i, x in enumerate(precision[::-1]):
         if x < max_to_the_right:
@@ -73,12 +93,16 @@ def compute_AP(preds_list, labels_dict, iou_level=0.5):
         elif x > max_to_the_right:
             max_to_the_right = x
 
-    # integrate rectangles to obtain Average Precision
+
+    # Integrate rectangles to obtain Average Precision
     prev_recall = 0
     area = 0
+    
     for p, r in zip(precision, recall):
         area += p * (r - prev_recall)
         prev_recall = r
+    
+
     return area
 
 
@@ -86,46 +110,57 @@ def compute_AP(preds_list, labels_dict, iou_level=0.5):
 # Function: Compute mAP
 def compute_mAP(preds, labels):
     labels_dict = dict()
+    # print(preds)
+    # print(labels)
 
+    # Create labels_dict {image_fname:boxes}
     for row in labels:
-        if len(row) == 2:
-            continue
-        labels_dict[int(row[0]), int(row[1])] = row[2]
-    for p in preds:
-        p[0] = int(p[0])  # seq
-        p[1] = int(p[1])  # frame
+        labels_dict[row[0]] = row[1]
+    
     # return mAP
     APs = [compute_AP(preds, labels_dict, iou) for iou in np.arange(0.5, 1.0, 0.05)]
+    
     return np.mean(APs), APs
 
 
 
 # Function: Compute mAP from files
 def compute_mAP_from_files(preds_file, labels_file):
+    
+    # Convert labels
     labels = list()
-    # convert labels to the right format (dict of lists) [seq, frame] -> [box1, box2, ...]
-    with open(labels_file, newline='') as csvfile:
-        reader = csv.reader(csvfile, delimiter=';')
-        for i, row in enumerate(reader):
-            if i == 0 or len(row) == 2:
-                continue
-            labels.append([int(row[0]), int(row[1]), eval(row[2])])
+    
+    # Convert labels to the right format (dict of lists) [image_fname] -> [box1, box2, ...]
+    # Open train JSON file
+    with open(labels_file, 'r') as j:
 
+        # Load JSON contents
+        json_data = json.loads(j.read())
+            
+    for key, value in json_data.items():
+        # TODO: Define a label system based on JSON, that will be used in the competition
+        labels.append([key, [value[0]]])
+
+
+    # Convert prediction
     preds = list()
-    # conver predictions to the right format (list) [seq, frame, [x, y, x+w, y+h], score]
-    with open(preds_file, newline='') as csvfile:
-        reader = csv.reader(csvfile, delimiter=';')
-        for i, row in enumerate(reader):
-            if row == "seq;frame;label;score".split(";"):
-                continue
-            preds.append([int(row[0]), int(row[1]), eval(row[2]), float(row[3])])
+    
+    # Convert predictions to the right format (list) [image_fname, [x, y, x+w, y+h], score]
+    with open(preds_file, 'r') as j:
+        # Load JSON contents
+        json_data = json.loads(j.read())
+            
+    for key, value in json_data.items():
+        preds.append([key, value[0], value[1]])
+    
+    
     return compute_mAP(preds, labels)
 
 
 
 # Run this to test file
 if __name__=="__main__":
-    mAP, AP = compute_mAP_from_files("predictions.csv", "/home/master/dataset/test/labels.csv")
+    mAP, AP = compute_mAP_from_files(os.path.join("results", "predictions", "predictions.json"), os.path.join("results", "predictions", "predictions.json"))
     print("mAP:{:.4f}".format(mAP))
     for ap_metric, iou in zip(AP, np.arange(0.5, 1, 0.05)):
         print("\tAP at IoU level [{:.2f}]: {:.4f}".format(iou, ap_metric))

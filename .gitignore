@@ -132,6 +132,7 @@ dmypy.json
 # Filetypes
 *.json
 *.txt
+*.csv
 
 # Folders
 data/raw
@@ -139,3 +140,4 @@ data/json
 data/processed
 data/masks
 code/yolov5_obb
+results/models
