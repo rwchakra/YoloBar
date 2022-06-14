@@ -71,8 +71,8 @@ for image_fname in tqdm.tqdm(train_data.keys()):
         mask = np.zeros_like(npy_image)
 
         # Convert the barcode notation into contour notation
-        ymin, xmin, ymax, xmax = barcode[0], barcode[1], barcode[2], barcode[3]
-        contours = [np.array([[xmin, ymax], [xmin, ymin], [xmax, ymin], [xmax, ymax]], dtype=np.int32)]
+        # ymin, xmin, ymax, xmax = barcode[0], barcode[1], barcode[2], barcode[3]
+        contours = [np.array([[point['x'], point['y']] for point in barcode], dtype=np.int32)]
         for cnt in contours:
             cv2.drawContours(mask, [cnt], 0, (255, 255, 255), -1)
 
@@ -93,7 +93,9 @@ for image_fname in tqdm.tqdm(train_data.keys()):
 
         # Update challenge train dictionary with all the fields expected bay the Mask-RCNN
         # boxes (``FloatTensor[N, 4]``): the ground-truth boxes in ``[x1, y1, x2, y2]`` format, with ``0 <= x1 < x2 <= W`` and ``0 <= y1 < y2 <= H``.
-        challenge_train_dict[image_fname]["boxes"].append([xmin, ymin, xmax, ymax])
+        vesMask = (mask > 0).astype(np.uint8)
+        x, y, w, h = cv2.boundingRect(vesMask)
+        challenge_train_dict[image_fname]["boxes"].append([x, y, x+w, y+h])
 
         # labels (Int64Tensor[N]): the class label for each ground-truth box
         challenge_train_dict[image_fname]["labels"].append(1)
@@ -143,8 +145,9 @@ for image_fname in tqdm.tqdm(test_data.keys()):
         mask = np.zeros_like(npy_image)
 
         # Convert the barcode notation into contour notation
-        ymin, xmin, ymax, xmax = barcode[0], barcode[1], barcode[2], barcode[3]
-        contours = [np.array([[xmin, ymax], [xmin, ymin], [xmax, ymin], [xmax, ymax]], dtype=np.int32)]
+        # ymin, xmin, ymax, xmax = barcode[0], barcode[1], barcode[2], barcode[3]
+        # contours = [np.array([[xmin, ymax], [xmin, ymin], [xmax, ymin], [xmax, ymax]], dtype=np.int32)]
+        contours = [np.array([[point['x'], point['y']] for point in barcode], dtype=np.int32)]
         for cnt in contours:
             cv2.drawContours(mask, [cnt], 0, (255, 255, 255), -1)
 
@@ -164,7 +167,9 @@ for image_fname in tqdm.tqdm(test_data.keys()):
 
         # Update challenge train dictionary with all the fields expected bay the Mask-RCNN
         # boxes (``FloatTensor[N, 4]``): the ground-truth boxes in ``[x1, y1, x2, y2]`` format, with ``0 <= x1 < x2 <= W`` and ``0 <= y1 < y2 <= H``.
-        challenge_test_dict[image_fname]["boxes"].append([xmin, ymin, xmax, ymax])
+        vesMask = (mask > 0).astype(np.uint8)
+        x, y, w, h = cv2.boundingRect(vesMask)
+        challenge_test_dict[image_fname]["boxes"].append([x, y, x+w, y+h])
 
         # labels (Int64Tensor[N]): the class label for each ground-truth box
         challenge_test_dict[image_fname]["labels"].append(1)

@@ -24,11 +24,7 @@ def convert_lbox_coords(coords_list):
     xmin, xmax = min(xx), max(xx)
 
 
-    # New coordinates
-    new_coords = [ymin, xmin, ymax, xmax]
-
-
-    return new_coords
+    return ymin, xmin, ymax, xmax
 
 
 

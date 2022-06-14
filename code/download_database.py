@@ -1,19 +1,15 @@
 # Imports
 import os
 import json
-import wget
 import tqdm
 from urllib import request
-import numpy as np 
-import pandas as pd 
-from PIL import Image
 
 
 
 # Directories and Paths
 code = 'code'
 data = 'data'
-json_file = os.path.join(data, 'export-2022-06-09T10_25_16.167Z.json')
+json_file = os.path.join(data, "json", 'export-2022-06-09T10_25_16.167Z.json')
 
 
 # Open JSON file
@@ -23,8 +19,6 @@ with open(json_file, 'r') as j:
     json_data = json.loads(j.read())
 
 
-
-# TODO: Erase uppon review
 # Uncomment if you need some sanity check prints
 # for key, value in json_data[0].items():
     # print(f"Key: {key} | Value: {value}")
@@ -57,7 +51,6 @@ for data_point in tqdm.tqdm(json_data):
             os.makedirs(os.path.join(data, "raw"))
         
         # Download the image to this folder
-        # response = wget.download(image_url, os.path.join(data, "raw", image_filename))
         response = request.urlretrieve(image_url, os.path.join(data, "raw", image_filename))
 
         # Add data point to the data dictionary
@@ -71,18 +64,11 @@ for data_point in tqdm.tqdm(json_data):
             data_dict[image_filename][obj["value"]].append(obj["polygon"])
 
 
-        # TODO: Erase uppon review
-        # print(f"URL: {image_url}")
-        # print(f"Filename: {image_filename}")
-        # print(f"Labels: {labels}")
-        # print(f"Objects: {l_objects}")
-        # print(f"Classifications: {l_classification}")
-
     # Convert the data dictionary into a JSON and dump it to a file
     json_object = json.dumps(data_dict, indent=4)
 
     # Writing to good_quality_imgs.json
-    with open(os.path.join(data, "good_quality_imgs.json"), "w") as j:
+    with open(os.path.join(data, "json", "good_quality_imgs.json"), "w") as j:
         j.write(json_object)
 
 

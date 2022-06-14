@@ -6,7 +6,7 @@ import numpy as np
 from PIL import Image
 
 # Project Imports
-from utilities import apply_blurring
+from utilities import convert_lbox_coords, apply_blurring
 
 
 # Random seed
@@ -66,7 +66,7 @@ for image_filename in tqdm.tqdm(train_images):
         for coords_list in labels:
             
             # Get 2D indices
-            ymin, xmin, ymax, xmax = coords_list[0], coords_list[1], coords_list[2], coords_list[3]
+            ymin, xmin, ymax, xmax = convert_lbox_coords(coords_list)
 
             # Get this slice (it will be changed)
             slice_to_anon = img_array_proc[int(ymin):int(ymax), int(xmin):int(xmax)].copy()
@@ -92,7 +92,7 @@ for image_filename in tqdm.tqdm(train_images):
         for coords_list in labels:
                 
             # Get 2D indices
-            ymin, xmin, ymax, xmax = coords_list[0], coords_list[1], coords_list[2], coords_list[3]
+            ymin, xmin, ymax, xmax = convert_lbox_coords(coords_list)
 
             # Get the barcode slices
             bcode_slice = img_array_tmp[int(ymin):int(ymax), int(xmin):int(xmax)].copy()

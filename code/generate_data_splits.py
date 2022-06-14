@@ -7,9 +7,6 @@ import numpy as np
 # Sklearn Imports
 from sklearn.model_selection import train_test_split
 
-# Project Imports
-from utilities import convert_lbox_coords
-
 
 
 # Directories and Files
@@ -58,22 +55,22 @@ for subset, subset_dict, split in zip([train_images, test_images], [train_dict, 
         # Barcode data
         barcodes = annotations["barcode"]
         for coords_list in barcodes:
-            subset_dict[image_filename]["barcode"].append(convert_lbox_coords(coords_list))
+            subset_dict[image_filename]["barcode"].append(coords_list)
 
         # Invoice data
         invoices = annotations["invoice"]
         for coords_list in invoices:
-            subset_dict[image_filename]["invoice"].append(convert_lbox_coords(coords_list))
+            subset_dict[image_filename]["invoice"].append(coords_list)
 
         # Recipient data
         recipients = annotations["recipient"]
         for coords_list in recipients:
-            subset_dict[image_filename]["recipient"].append(convert_lbox_coords(coords_list))
+            subset_dict[image_filename]["recipient"].append(coords_list)
 
         # Sender data
         senders = annotations["sender"]
         for coords_list in senders:
-            subset_dict[image_filename]["sender"].append(convert_lbox_coords(coords_list))
+            subset_dict[image_filename]["sender"].append(coords_list)
     
 
     # Convert this information into JSON and dump it to a file

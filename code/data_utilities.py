@@ -64,24 +64,28 @@ class ToTensor(object):
 
 
 # Function: Create a Compose of data transforms (for training)
-def get_train_transform():
-    transforms = []
-    # converts the image, a PIL image, into a PyTorch Tensor
-    transforms.append(ToTensor())
+def get_transform(training=True, data_augment=True):
     
-    # during training, randomly flip the training images
-    # and ground-truth for data augmentation
-    transforms.append(RandomHorizontalFlip(0.5))
+    # During training (training and validation sets)
+    if training:
+        transforms = []
+
+        # Converts the image, a PIL image, into a PyTorch Tensor
+        transforms.append(ToTensor())
+        
+        # Apply data augmentation during training
+        if data_augment:
+            # In this case, we are applying a RandomHorizontalFlip
+            transforms.append(RandomHorizontalFlip(0.5))
+        
+
+        return Compose(transforms)
     
+    
+    # During test (test set)
+    else:
 
-    return Compose(transforms)
-
-
-
-# Function: Create a Compose of data transforms (for evaluation, i.e., validation or test)
-def get_eval_transform():
-    # in case you want to insert some transformation in here
-    return torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+        return torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 
 
 
@@ -149,9 +153,11 @@ class LoggiPackageDataset(Dataset):
             # Masks
             masks = self.label_dict[image_fname]['masks']
             masks = [np.asarray(Image.open(os.path.join(self.data_dir, "masks", "train", image_fname.split('.')[0], m)).convert("L")) for m in masks]
+            masks = [(m > 0).astype(np.uint8) for m in masks]
             masks = torch.as_tensor(masks, dtype=torch.uint8)
+            # TODO: Check this
             # Remove channel dimension
-            masks = masks.squeeze(0)
+            # masks = masks.squeeze(0)
             
             # Image Index
             image_idx = torch.tensor([idx])
@@ -181,7 +187,7 @@ class LoggiPackageDataset(Dataset):
             return image, target
         
 
-        # TODO: Finish script so it can be used with validation as well
+        # TODO: Finish script so it can be used with test set as well
         else:
 
             # Get image data
@@ -208,7 +214,7 @@ class LoggiPackageDataset(Dataset):
 if __name__ == "__main__":
     
     # Create a LoggiPackageDataset instance
-    train_transforms = get_train_transform()
+    train_transforms = get_transform()
     train_set = LoggiPackageDataset(data_dir="data", transforms=train_transforms)
 
     # Create a DataLoader
@@ -224,14 +230,14 @@ if __name__ == "__main__":
         images_ = list(image.to(device) for image in images)
         targets_ = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-        print(images_, targets_)
+        # print(images_, targets_)
         
         for i in range(batch_size):
             print(f"i: {i}")
-            print(f"Images (shape): {images_[i].shape}")
+            print(f"Images (shape, min, max): {images_[i].shape}, {torch.min(images[i])}, {torch.max(images[i])}")
             print(f"Boxes (shape): {targets_[i]['boxes'].shape}")
             print(f"Labels (shape): {targets_[i]['labels'].shape}")
-            print(f"Masks (shape): {targets_[i]['masks'].shape}")
+            print(f"Masks (shape, min, max): {targets_[i]['masks'].shape}, {torch.min(targets_[i]['masks'])}, {torch.max(targets_[i]['masks'])}")
             print(f"Image Indices: {targets_[i]['image_idx']}")
             print(f"Area of the objects: {targets_[i]['area']}")
             print(f"Is crowd: {targets_[i]['iscrowd']}")

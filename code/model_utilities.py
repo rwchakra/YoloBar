@@ -50,13 +50,23 @@ class LoggiBarcodeDetectionModel(torch.nn.Module):
         return
     
 
-    def forward(self, inputs):
+    def forward(self, inputs, targets):
 
         # Compute outputs
-        outputs = self.model(inputs)
+        if self.training == True:
+            outputs = self.model(inputs, targets)
+        
+        else:
+            outputs = self.model(inputs)
 
 
         return outputs
+    
+    
+    def summary(self):
+        
+        return summary(self.model, (1, 3, 1024, 1024))
+
 
 
 
