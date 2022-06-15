@@ -19,6 +19,20 @@ def collate_fn(batch):
 
 
 
+# Function: Convert bounding box to COCO notation
+def convert_bbox_to_coco(bbox, reverse=False):
+
+    # Our notation has the format [x, y, x+w, y+h]
+    # In COCO, the notation has the format [x_min, y_min, width, height]
+    x_min, y_min, width, height = bbox[0], bbox[1], (bbox[2]-bbox[0]), (bbox[3]-bbox[1])
+
+    # We then create a list
+
+
+    return
+
+
+
 # Class: (Homebrew) Compose
 class Compose(object):
     def __init__(self, transforms):
