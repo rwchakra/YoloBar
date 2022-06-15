@@ -6,7 +6,6 @@ import tqdm
 # PyTorch Imports
 import torch
 from torch.utils.data import DataLoader
-import torchvision
 from torchvision.ops import nms
 
 # Project Imports

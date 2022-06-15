@@ -157,7 +157,7 @@ class LoggiPackageDataset(Dataset):
             masks = torch.as_tensor(masks, dtype=torch.uint8)
             
             # Image Index
-            image_idx = torch.tensor([idx])
+            image_id = torch.tensor([idx])
             
             # Area (do we need this?)
             area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
@@ -173,6 +173,7 @@ class LoggiPackageDataset(Dataset):
             target["masks"] = masks
             target["area"] = area
             target["iscrowd"] = iscrowd
+            target["image_id"] = image_id
 
 
             # Apply transforms to both image and target

@@ -6,8 +6,6 @@ import numpy as np
 # PyTorch Imports
 import torch
 import torch.utils.data
-import torchvision
-from torchinfo import summary
 
 # Project Imports
 from data_utilities import get_transform, collate_fn, LoggiPackageDataset
@@ -98,6 +96,13 @@ for epoch in range(NUM_EPOCHS):
         loss_dict = model(images, targets_)
         losses = sum(loss for loss in loss_dict.values())
         loss_value = losses.item()
+
+        # Print loss values
+        # print(f"Loss Classifier: {loss_dict['loss_classifier'].item()}")
+        # print(f"Loss Box Regression: {loss_dict['loss_box_reg'].item()}")
+        # print(f"Loss Mask: {loss_dict['loss_mask'].item()}")
+        # print(f"Loss Objectness: {loss_dict['loss_objectness'].item()}")
+        # print(f"Loss RPN Box Regression: {loss_dict['loss_rpn_box_reg'].item()}")
 
 
         # Optimise models parameters

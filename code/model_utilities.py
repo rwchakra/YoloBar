@@ -1,5 +1,4 @@
 # Imports
-import os
 
 # PyTorch Imports
 import torch
