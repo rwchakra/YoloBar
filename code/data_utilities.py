@@ -4,6 +4,8 @@ import json
 import random
 import numpy as np
 from PIL import Image
+import albumentations as A 
+import cv2
 
 # PyTorch Imports
 import torch
@@ -22,14 +24,32 @@ def collate_fn(batch):
 # Function: Convert bounding box to COCO notation
 def convert_bbox_to_coco(bbox, reverse=False):
 
-    # Our notation has the format [x, y, x+w, y+h]
-    # In COCO, the notation has the format [x_min, y_min, width, height]
-    x_min, y_min, width, height = bbox[0], bbox[1], (bbox[2]-bbox[0]), (bbox[3]-bbox[1])
+    if not reverse:
+        # Our notation has the format [x, y, x+w, y+h]
+        # In COCO, the notation has the format [x_min, y_min, width, height]
+        x_min, y_min, width, height = bbox[0], bbox[1], (bbox[2]-bbox[0]), (bbox[3]-bbox[1])
 
-    # We then create a list
+        # We then create a list with these entries
+        converted_bbox = [x_min, y_min, width, height]
+    
+    else:
+        # We assume we receive the data in the COCO format
+        # The notation has the format [x_min, y_min, width, height]
+        x_min, y_min, width, height = bbox[0], bbox[1], bbox[2], bbox[3]
 
 
-    return
+        # We then convert it to our notation [x, y, x+w, y+h]
+        converted_bbox = [x_min, y_min, x_min+width, y_min+height]
+
+
+    return converted_bbox
+
+
+
+# Function: Convert COCO notation to bounding box
+def convert_coco_to_bbox(bbox):
+
+    return convert_bbox_to_coco(bbox, reverse=True)
 
 
 
