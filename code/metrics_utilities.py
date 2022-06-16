@@ -7,7 +7,7 @@ import json
 
 # TODO: Add IoU for Segmentation Masks
 # Check: https://github.com/matterport/Mask_RCNN/issues/2440
-
+# Check: https://kharshit.github.io/blog/2019/09/20/evaluation-metrics-for-object-detection-and-segmentation
 
 
 # Function: Compute Intersection over Union (IoU)
