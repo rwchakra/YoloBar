@@ -21,7 +21,7 @@ class LoggiBarcodeDetectionModel(torch.nn.Module):
 
         # Select the backbone
         if self.backbone == "mobilenet_v2":
-            # Soruce: https://pytorch.org/vision/stable/_modules/torchvision/models/detection/mask_rcnn.html#maskrcnn_resnet50_fpn
+            # Source: https://pytorch.org/vision/stable/_modules/torchvision/models/detection/mask_rcnn.html#maskrcnn_resnet50_fpn
             # Load a pre-trained model for classification and return only the features
             backbone_ = torchvision.models.mobilenet_v2(pretrained=self.backbone_pretrained).features
             # MaskRCNN needs to know the number of output channels in a backbone
