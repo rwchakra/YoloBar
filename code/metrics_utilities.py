@@ -5,6 +5,10 @@ import copy
 import json
 
 
+# TODO: Add IoU for Segmentation Masks
+# Check: https://github.com/matterport/Mask_RCNN/issues/2440
+
+
 
 # Function: Compute Intersection over Union (IoU)
 def IOU(box1, box2):
