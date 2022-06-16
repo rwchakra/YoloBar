@@ -140,4 +140,4 @@ data/json
 data/processed
 data/masks
 code/yolov5_obb
-results/models
+results/
