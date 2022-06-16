@@ -34,9 +34,10 @@ dataset_notransforms = LoggiPackageDataset(data_dir=DATA_DIR, training=True, tra
 
 # Split the dataset into train and validation sets
 indices = torch.randperm(len(dataset)).tolist()
-# train_set = torch.utils.data.Subset(dataset, indices[:-299])
-train_set = torch.utils.data.Subset(dataset, indices[:2])
-val_set = torch.utils.data.Subset(dataset_notransforms, indices[2:4])
+# Train Set: 1000 samples
+train_set = torch.utils.data.Subset(dataset, indices[:-299])
+# Validation Set: 299 samples
+val_set = torch.utils.data.Subset(dataset_notransforms, indices[-299:])
 
 # DataLoaders
 # Define batch size

@@ -375,7 +375,7 @@ class LoggiPackageDataset(Dataset):
 
 
             # Convert to Tensors
-            image = F.to_tensor(image)
+            image = F.to_tensor(image.copy())
             masks = torch.as_tensor(masks, dtype=torch.uint8)
             labels = torch.as_tensor(bbox_classes, dtype=torch.int64)
             boxes = torch.as_tensor(bboxes, dtype=torch.float32)
@@ -419,7 +419,7 @@ class LoggiPackageDataset(Dataset):
             
 
             # Convert to Tensors
-            image = F.to_tensor(image)
+            image = F.to_tensor(image.copy())
             
 
 

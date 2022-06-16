@@ -133,6 +133,7 @@ dmypy.json
 *.json
 *.txt
 *.csv
+*.zip
 
 # Folders
 data/raw
