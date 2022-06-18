@@ -142,3 +142,5 @@ data/processed
 data/masks
 code/yolov5_obb
 results/
+
+echo .DS_Store >> .gitignore
