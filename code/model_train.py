@@ -129,28 +129,29 @@ for epoch in range(NUM_EPOCHS):
     ground_truth = list()
     predictions = list()
 
-    # Go through validation loader
-    for images, targets, image_fnames in tqdm.tqdm(val_loader):
+    with torch.no_grad():
+        # Go through validation loader
+        for images, targets, image_fnames in tqdm.tqdm(val_loader):
 
-        # Load data
-        images = list(img.to(DEVICE) for img in images)
-        targets_ = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
-        image_fnames_ = [f for f in image_fnames]
-        outputs = model(images, targets)
-
-
-        # Add to ground truth list
-        for out, t, fname in zip(outputs, targets_, image_fnames_):
-            gt_boxes = list()
-
-            for bb in t["boxes"]:
-                gt_boxes.append(list(bb.detach().cpu().numpy()))
-            
-            ground_truth.append([fname, gt_boxes])
+            # Load data
+            images = list(img.to(DEVICE) for img in images)
+            targets_ = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
+            image_fnames_ = [f for f in image_fnames]
+            outputs = model(images, targets)
 
 
-            for bb, score in zip(out["boxes"], out["scores"]):
-                predictions.append([fname, list(bb.detach().cpu().numpy()), float(score.detach().cpu())])
+            # Add to ground truth list
+            for out, t, fname in zip(outputs, targets_, image_fnames_):
+                gt_boxes = list()
+
+                for bb in t["boxes"]:
+                    gt_boxes.append(list(bb.detach().cpu().numpy()))
+                
+                ground_truth.append([fname, gt_boxes])
+
+
+                for bb, score in zip(out["boxes"], out["scores"]):
+                    predictions.append([fname, list(bb.detach().cpu().numpy()), float(score.detach().cpu())])
     
 
     # Compute validation metrics
