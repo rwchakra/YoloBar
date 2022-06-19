@@ -2,6 +2,7 @@
 import os
 import tqdm
 import numpy as np
+import argparse
 
 # PyTorch Imports
 import torch
@@ -17,6 +18,11 @@ from metrics_utilities import compute_mAP
 # Random seeds
 torch.manual_seed(42)
 
+# Args for training
+parser = argparse.ArgumentParser(description = 'description')
+parser.add_argument('--batch_size', type = int, default = 1)
+parser.add_argument('--num_epochs', type = int, default = 1)
+args = parser.parse_args()
 
 
 # Directories
@@ -41,7 +47,7 @@ val_set = torch.utils.data.Subset(dataset_notransforms, indices[-299:])
 
 # DataLoaders
 # Define batch size
-BATCH_SIZE = 1
+BATCH_SIZE = args.batch_size
 
 # Train loader
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, collate_fn=collate_fn)
@@ -71,7 +77,7 @@ optimizer = torch.optim.SGD(model_params, lr=0.005, momentum=0.9, weight_decay=0
 
 
 # Define the number of epochs
-NUM_EPOCHS = 1
+NUM_EPOCHS = args.num_epochs
 
 
 # Start the training and validation loops
