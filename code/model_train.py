@@ -22,6 +22,7 @@ torch.manual_seed(42)
 parser = argparse.ArgumentParser(description = 'description')
 parser.add_argument('--batch_size', type = int, default = 1)
 parser.add_argument('--num_epochs', type = int, default = 1)
+parser.add_argument('--img_size', type = int, default = 1024, help="new size for img resize transform.")
 args = parser.parse_args()
 
 
@@ -35,8 +36,8 @@ if not os.path.isdir(SAVE_MODEL_DIR):
 
 # Prepare data
 # First, we create two train sets with different transformations (we will use the one w/out transforms as validation set)
-dataset = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(training=True, data_augment=True))
-dataset_notransforms = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(training=True, data_augment=False))
+dataset = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(training=True, data_augment=True, img_size=args.img_size))
+dataset_notransforms = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(training=False, data_augment=False, img_size=args.img_size))
 
 # Split the dataset into train and validation sets
 indices = torch.randperm(len(dataset)).tolist()
@@ -105,11 +106,11 @@ for epoch in range(NUM_EPOCHS):
         loss_value = losses.item()
 
         # Print loss values
-        # print(f"Loss Classifier: {loss_dict['loss_classifier'].item()}")
-        # print(f"Loss Box Regression: {loss_dict['loss_box_reg'].item()}")
-        # print(f"Loss Mask: {loss_dict['loss_mask'].item()}")
-        # print(f"Loss Objectness: {loss_dict['loss_objectness'].item()}")
-        # print(f"Loss RPN Box Regression: {loss_dict['loss_rpn_box_reg'].item()}")
+        print(f"Loss Classifier: {loss_dict['loss_classifier'].item()}")
+        print(f"Loss Box Regression: {loss_dict['loss_box_reg'].item()}")
+        print(f"Loss Mask: {loss_dict['loss_mask'].item()}")
+        print(f"Loss Objectness: {loss_dict['loss_objectness'].item()}")
+        print(f"Loss RPN Box Regression: {loss_dict['loss_rpn_box_reg'].item()}")
 
 
         # Optimise models parameters

@@ -229,7 +229,7 @@ def convert_coco_to_bbox(bbox):
 
 
 # Function: Create a Compose of data transforms (for training)
-def get_transform(training, data_augment):
+def get_transform(training, data_augment, img_size):
 
     # Assert conditions
     assert training in (True, False), f"The 'training' parameter should be a boolean (True, False). You entered {training}."
@@ -243,15 +243,22 @@ def get_transform(training, data_augment):
         
         if data_augment:
             transforms = A.Compose([
-                A.HorizontalFlip(p=0.5)
+                A.HorizontalFlip(p=0.5),
+                A.Resize(img_size, img_size)
             ], bbox_params=A.BboxParams(format='coco', label_fields=['bbox_classes']))
 
-
+        else:
+            transforms = A.Compose([
+                A.Resize(img_size, img_size)
+            ], bbox_params=A.BboxParams(format='coco', label_fields=['bbox_classes']))
         return transforms
     
     
     # During test (test set)
     else:
+        transforms = A.Compose([
+                A.Resize(img_size, img_size)
+            ], bbox_params=A.BboxParams(format='coco', label_fields=['bbox_classes']))
 
         return transforms
 
