@@ -5,11 +5,89 @@ import copy
 import json
 
 
-# TODO: Add IoU for Segmentation Masks
-# Check: https://github.com/matterport/Mask_RCNN/issues/2440
-# Check: https://kharshit.github.io/blog/2019/09/20/evaluation-metrics-for-object-detection-and-segmentation
+# Acknowledgements
+# Kudos to: https://github.com/matterport/Mask_RCNN/issues/2440
+# Kudos to: https://kharshit.github.io/blog/2019/09/20/evaluation-metrics-for-object-detection-and-segmentation
 
 
+# IoU (Intersection over Union) for Segmentation Masks
+# Function: Merge n masks into a single mask
+def merged_mask(masks):
+    """
+    param masks: NumPy array
+    """
+    
+    # Get the number of predicted masks (the number of elements in the list)
+    n_masks = len(masks)
+
+    # Squeze axis=1 (channels) of the masks
+    masks_ = np.squeeze(a=masks.copy(), axis=1)
+    
+
+    # We must have at least one mask
+    if n > 0:        
+        
+        # Create an array for the final merged mask
+        merged_mask = np.zeros((masks.shape[0], masks.shape[1]))
+        
+        # Iterate through all the masks 
+        for i in range(n):
+            
+            # And add them in the merged mask
+            # merged_mask += masks[..., i]
+            merged_mask += masks[i, :, :]
+        
+
+        # Create uint8 array
+        merged_mask = np.asarray(merged_mask, dtype=np.uint8)
+        
+        return merged_mask
+    
+    # return masks[:,:,0]
+
+
+
+# Function: Computes IoU (Intersection over Union) score for two binary masks
+def IOU_mask(pred_masks, gt_masks, iou_type=1):
+    """
+    param pred_masks: NumPy array
+    param gt_masks: NumPy array
+    param iou_type: Integer (Note: Results are same for both types.)
+    return iou score:
+    """
+
+    assert iou_type in (1, 2), f"Parameter iou_type must be either 1 or 2; {iou_type} is not a valid value."
+
+    # First, we must be sure that we have predicted masks:
+    if len(pred_maks) == 0:
+        return 0
+    
+    # If yes, we may compute the IoU
+    else:
+
+        # Apply the function to merge all the predicted and ground-truth masks
+        mask1 = merged_mask(pred_masks)
+        mask2 = merged_mask(gt_masks)
+        
+
+        # Compute IoU
+        if iou_type == 1:
+            intersection = np.sum((mask1 + mask2) > 1)
+            union = np.sum((mask1 + mask2) > 0)
+            iou_score = intersection / float(union)
+            print(f"IoU Type 1 : {iou_score}.")
+        
+        elif iou_type == 2:
+            intersection = np.logical_and(mask1, mask2)#*
+            union = np.logical_or(mask1, mask2)# +
+            iou_score = np.sum(intersection) / np.sum(union)
+            print(f"IoU Type 2 : {iou_score}.")
+        
+        return iou_score
+
+
+
+# IoU (Intersection over Union) for Bounding Boxes
 # Function: Compute Intersection over Union (IoU)
 def IOU(box1, box2):
     # coordinates for the intersection box (if it exists)
@@ -72,7 +150,8 @@ def compute_AP(preds_list, labels_dict, iou_level=0.5):
         # Compute IoU for all the boxes
         ious_elems = [(IOU(box, x), x) for x in possible_matches]
         ious_elems = sorted(ious_elems, key=lambda x:x[0], reverse=True)
-        
+
+
         # Select the top_match
         iou, elem = ious_elems[0]
         
@@ -87,7 +166,7 @@ def compute_AP(preds_list, labels_dict, iou_level=0.5):
             FP += 1
     
 
-    # TODO: (Study this!) Max to the right
+    # Max to the right
     max_to_the_right = 0
     for i, x in enumerate(precision[::-1]):
         if x < max_to_the_right:

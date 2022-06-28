@@ -91,7 +91,7 @@ for image_fname in tqdm.tqdm(train_data.keys()):
         pil_mask.save(os.path.join(data_dir, "masks", "train", image_fname.split('.')[0], f"{idx}.jpg"))
 
 
-        # Update challenge train dictionary with all the fields expected bay the Mask-RCNN
+        # Update challenge train dictionary with all the fields expected by the Mask-RCNN
         # boxes (``FloatTensor[N, 4]``): the ground-truth boxes in ``[x1, y1, x2, y2]`` format, with ``0 <= x1 < x2 <= W`` and ``0 <= y1 < y2 <= H``.
         vesMask = (mask > 0).astype(np.uint8)
         x, y, w, h = cv2.boundingRect(vesMask)

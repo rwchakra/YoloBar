@@ -251,6 +251,7 @@ def get_transform(training, data_augment, img_size):
             transforms = A.Compose([
                 A.Resize(img_size, img_size)
             ], bbox_params=A.BboxParams(format='coco', label_fields=['bbox_classes']))
+        
         return transforms
     
     
@@ -258,7 +259,7 @@ def get_transform(training, data_augment, img_size):
     else:
         transforms = A.Compose([
                 A.Resize(img_size, img_size)
-            ], bbox_params=A.BboxParams(format='coco', label_fields=['bbox_classes']))
+            ])
 
         return transforms
 
@@ -422,7 +423,12 @@ class LoggiPackageDataset(Dataset):
 
             # Check if we have transforms
             if self.transforms:
-                image = self.transforms(image)
+
+                # Get transformed data
+                transformed = self.transforms(image=image)
+
+                # Get image
+                image = transformed["image"]
             
 
             # Convert to Tensors

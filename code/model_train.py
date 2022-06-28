@@ -143,11 +143,14 @@ for epoch in range(NUM_EPOCHS):
             # Add to ground truth list
             for out, t, fname in zip(outputs, targets_, image_fnames_):
                 gt_boxes = list()
+                gt_masks = list()
 
-                for bb in t["boxes"]:
+                for bb, mask in zip(t["boxes"], t["masks"]):
                     gt_boxes.append(list(bb.detach().cpu().numpy()))
+                    print(f'Masks shape: {t["masks"].shape}')
+                    gt_masks.append(mask.detach().cpu().numpy())
                 
-                ground_truth.append([fname, gt_boxes])
+                ground_truth.append([fname, gt_boxes, gt_masks])
 
 
                 for bb, score in zip(out["boxes"], out["scores"]):
