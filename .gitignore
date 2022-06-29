@@ -136,6 +136,7 @@ dmypy.json
 *.zip
 
 # Folders
+data_participants/
 data/raw
 data/json
 data/processed
