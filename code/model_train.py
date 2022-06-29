@@ -3,6 +3,7 @@ import os
 import tqdm
 import numpy as np
 import argparse
+from PIL import Image
 
 # PyTorch Imports
 import torch
@@ -11,7 +12,7 @@ import torch.utils.data
 # Project Imports
 from data_utilities import get_transform, collate_fn, LoggiPackageDataset
 from model_utilities import LoggiBarcodeDetectionModel
-from metrics_utilities import compute_mAP
+from metrics_utilities import compute_mAP_metrics
 
 
 
@@ -26,6 +27,9 @@ parser.add_argument('--img_size', type = int, default = 1024, help="new size for
 args = parser.parse_args()
 
 
+# Constant variables
+IOU_RANGE = np.arange(0.5, 1, 0.05)
+
 # Directories
 DATA_DIR = "data"
 SAVE_MODEL_DIR = "results/models"
@@ -37,7 +41,7 @@ if not os.path.isdir(SAVE_MODEL_DIR):
 # Prepare data
 # First, we create two train sets with different transformations (we will use the one w/out transforms as validation set)
 dataset = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(training=True, data_augment=True, img_size=args.img_size))
-dataset_notransforms = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(training=False, data_augment=False, img_size=args.img_size))
+dataset_notransforms = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(training=True, data_augment=False, img_size=args.img_size))
 
 # Split the dataset into train and validation sets
 indices = torch.randperm(len(dataset)).tolist()
@@ -91,6 +95,14 @@ for epoch in range(NUM_EPOCHS):
     print("Training Phase")
     model.train()
 
+    # Initialize lists of losses for tracking
+    losses_classifier = list()
+    losses_box_reg = list()
+    losses_mask = list()
+    losses_objectness = list()
+    losses_rpn_box_reg = list()
+    losses_ = list()
+
 
     # Go through train loader
     for images, targets, _ in tqdm.tqdm(train_loader):
@@ -106,17 +118,27 @@ for epoch in range(NUM_EPOCHS):
         loss_value = losses.item()
 
         # Print loss values
-        print(f"Loss Classifier: {loss_dict['loss_classifier'].item()}")
-        print(f"Loss Box Regression: {loss_dict['loss_box_reg'].item()}")
-        print(f"Loss Mask: {loss_dict['loss_mask'].item()}")
-        print(f"Loss Objectness: {loss_dict['loss_objectness'].item()}")
-        print(f"Loss RPN Box Regression: {loss_dict['loss_rpn_box_reg'].item()}")
+        losses_classifier.append(loss_dict['loss_classifier'].item())
+        losses_box_reg.append(loss_dict['loss_box_reg'].item())
+        losses_mask.append(loss_dict['loss_mask'].item())
+        losses_objectness.append(loss_dict['loss_objectness'].item())
+        losses_rpn_box_reg.append(loss_dict['loss_rpn_box_reg'].item())
+        losses_.append(loss_value)
 
 
         # Optimise models parameters
         optimizer.zero_grad()
         losses.backward()
         optimizer.step()
+    
+
+    # Print loss values
+    print(f"Loss Classifier: {np.sum(losses_classifier) / len(train_set)}")
+    print(f"Loss Box Regression: {np.sum(losses_box_reg) / len(train_set)}")
+    print(f"Loss Mask: {np.sum(losses_mask) / len(train_set)}")
+    print(f"Loss Objectness: {np.sum(losses_objectness) / len(train_set)}")
+    print(f"Loss RPN Box Regression: {np.sum(losses_rpn_box_reg) / len(train_set)}")
+    print(f"Loss: {np.sum(losses_) / len(train_set)}")
 
 
     
@@ -125,11 +147,12 @@ for epoch in range(NUM_EPOCHS):
     print("Validation Phase")
     model.eval()
 
-    # Create lists for ground-truth and predictions
-    ground_truth = list()
-    predictions = list()
+    # Create dictionaries for ground-truth and predictions
+    groundtruth_data = dict()
+    predictions_data = dict()
 
     with torch.no_grad():
+        
         # Go through validation loader
         for images, targets, image_fnames in tqdm.tqdm(val_loader):
 
@@ -142,28 +165,85 @@ for epoch in range(NUM_EPOCHS):
 
             # Add to ground truth list
             for out, t, fname in zip(outputs, targets_, image_fnames_):
-                gt_boxes = list()
-                gt_masks = list()
 
+                # Create dictionaries for groundtruth data
+                groundtruth_data[fname] = dict()
+                groundtruth_data[fname]['boxes'] = list()
+                groundtruth_data[fname]['scores'] = list()
+                groundtruth_data[fname]['masks'] = list()
+
+                i = 0
                 for bb, mask in zip(t["boxes"], t["masks"]):
-                    gt_boxes.append(list(bb.detach().cpu().numpy()))
-                    print(f'Masks shape: {t["masks"].shape}')
-                    gt_masks.append(mask.detach().cpu().numpy())
-                
-                ground_truth.append([fname, gt_boxes, gt_masks])
+                    # Bounding-boxes
+                    groundtruth_data[fname]['boxes'].append(list(bb.detach().cpu().numpy()))
+                    
+                    # Masks
+                    msk_fname = f"{i}.jpg"
+                    groundtruth_data[fname]['masks'].append(msk_fname)
+                    # print(f'Masks shape: {t["masks"].shape}')
+
+                    # Save masks into directory
+                    msk_ = mask.detach().cpu().numpy().copy()
+                    pil_mask = Image.fromarray(msk_).convert("L")
+                    
+                    # Save into temporary directory
+                    if not os.path.isdir(os.path.join("results", "validation", "masks", "gt", fname.split('.')[0])):
+                        os.makedirs(os.path.join("results", "validation", "masks", "gt", fname.split('.')[0]))
+            
+                    pil_mask.save(os.path.join("results", "validation", "masks",  "gt", fname.split('.')[0], msk_fname))
+
+                    # Update i (idx)
+                    i += 1
 
 
-                for bb, score in zip(out["boxes"], out["scores"]):
-                    predictions.append([fname, list(bb.detach().cpu().numpy()), float(score.detach().cpu())])
+                # Create dictionaries for predictions data
+                predictions_data[fname] = dict()
+                predictions_data[fname]['boxes'] = list()
+                predictions_data[fname]['scores'] = list()
+                predictions_data[fname]['masks'] = list()
+
+                j = 0
+                for bb, mask, score in zip(out["boxes"], out["masks"], out["scores"]):
+                    # Bounding-boxes
+                    predictions_data[fname]['boxes'].append(list(bb.detach().cpu().numpy()))
+
+                    # Scores
+                    predictions_data[fname]['scores'].append(float(score.detach().cpu()))
+
+                    # Masks
+                    msk_fname = f"{i}.jpg"
+                    predictions_data[fname]['masks'].append(msk_fname)
+
+                    # Save masks into directory
+                    msk_ = np.squeeze(a=mask.detach().cpu().numpy().copy(), axis=0)
+                    pil_mask = Image.fromarray(msk_).convert("L")
+                    
+                    # Save into temporary directory
+                    if not os.path.isdir(os.path.join("results", "validation", "masks", "pred", fname.split('.')[0])):
+                        os.makedirs(os.path.join("results", "validation", "masks", "pred", fname.split('.')[0]))
+            
+                    pil_mask.save(os.path.join("results", "validation", "masks",  "pred", fname.split('.')[0], msk_fname))
+
+                    # Update j (idx)
+                    j += 1
     
 
     # Compute validation metrics
-    mAP, AP = compute_mAP(predictions, ground_truth)
-    print("mAP:{:.3f}".format(mAP))
+    predictions_dir = os.path.join("results", "validation", "masks",  "pred")
+    groundtruth_dir = os.path.join("results", "validation", "masks",  "gt")
 
+    bboxes_mAP, bboxes_APs, masks_mAP, masks_APs = compute_mAP_metrics(predictions_data, predictions_dir, groundtruth_data, groundtruth_dir)
+    
 
-    for ap_metric, iou in zip(AP, np.arange(0.5, 1, 0.05)):
-        print("\tAP at IoU level [{:.2f}]: {:.3f}".format(iou, ap_metric))
+    # Bounding-boxes mAP
+    print("Bounding-boxes mAP:{:.3f}".format(bboxes_mAP))
+    for ap_metric, iou in zip(bboxes_APs, IOU_RANGE):
+        print("\tBounding-boxes AP at IoU level [{:.2f}]: {:.3f}".format(iou, ap_metric))
+    
+    # Masks mAP
+    print("Masks mAP:{:.3f}".format(masks_mAP))
+    for ap_metric, iou in zip(masks_APs, IOU_RANGE):
+        print("\tMasks AP at IoU level [{:.2f}]: {:.3f}".format(iou, ap_metric))
 
 
 
