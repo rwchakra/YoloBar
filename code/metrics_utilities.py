@@ -112,58 +112,71 @@ def IOU(box1, box2):
 
 
 # Function: Compute AP, from https://towardsdatascience.com/breaking-down-mean-average-precision-map-ae462f623a52#1a59
-def compute_AP(preds_list, labels_dict, iou_level=0.5):
+def compute_AP(predictions_data, groundtruth_data, iou_level=0.5):
     
     # Create two lists for precision and recall values
     precision = list()
     recall = list()
     
     # Copy the labels dict since we gonna edit it
-    labels_dict = copy.deepcopy(labels_dict)
+    # labels_dict = copy.deepcopy(labels_dict)
+    groundtruth_data = copy.deepcopy(groundtruth_data)
+    # predictions_data = copy.deepcopy(predictions_data)
     
     # Initialize true positives (TP) and false positives (FP) to zero
     TP = FP = 0
     
     # The total number of positives = (TP + FN) which is constant if we fix labels_dict
-    total_positives = sum([len(x[1]) for x in labels_dict.items()])
+    # TODO: Erase uppon review 
+    # Note: {image_fname:boxes}
+    # print(f"GT Data Items: {groundtruth_data.items()}")
+    # print(f"GT Data Keys: {groundtruth_data.keys()}")
+    # total_positives = sum([len(x[1]) for x in labels_dict.items()])
+    total_positives = sum([len(groundtruth_data[img_fname]['boxes']) for img_fname in groundtruth_data.keys()])
+    # print(f"Total Positives: {total_positives}")
     
 
-    # Sort predictions by their score
-    preds_list = sorted(preds_list, key=lambda x:x[2], reverse=True)
+    # TODO: Erase uppon review
+    # TODO: Sort predictions by their score (no need to do this)
+    # preds_list = sorted(preds_list, key=lambda x:x[2], reverse=True)
     
     # Go through predictions
-    for image_fname, box, score in preds_list:
+    # for image_fname, box, score in preds_list:
+    for image_fname in predictions_data.keys():
+        for box in predictions_data[image_fname]['boxes']:
         
-        # Check if we have a prediction for all test images
-        if image_fname not in labels_dict.keys():
-            FP += 1
-            continue
+            # Check if we have a prediction for all test images
+            if image_fname not in groundtruth_data.keys():
+                FP += 1
+                continue
 
 
-        # Check if we have possible matches
-        possible_matches = labels_dict[image_fname]
-        if len(possible_matches) == 0:
-            FP+=1
-            continue        
+            # Check if we have possible matches
+            possible_matches = groundtruth_data[image_fname]['boxes']
+            if len(possible_matches) == 0:
+                FP += 1
+                continue        
 
 
-        # Compute IoU for all the boxes
-        ious_elems = [(IOU(box, x), x) for x in possible_matches]
-        ious_elems = sorted(ious_elems, key=lambda x:x[0], reverse=True)
+            # Compute IoU for all the bounding-boxes
+            ious_elems = [(IOU(box, x), x) for x in possible_matches]
+            ious_elems = sorted(ious_elems, key=lambda x:x[0], reverse=True)
 
 
-        # Select the top_match
-        iou, elem = ious_elems[0]
-        
-        # Check the IoU threshold
-        if iou >= iou_level:
-            TP += 1
-            labels_dict[image_fname].remove(elem)
-            precision.append(TP/(TP+FP))
-            recall.append(TP/total_positives)
-        
-        else:
-            FP += 1
+            # Select the top_match
+            iou, elem = ious_elems[0]
+            
+            # Check the IoU threshold
+            if iou >= iou_level:
+                TP += 1
+                # labels_dict[image_fname].remove(elem)
+                groundtruth_data[image_fname]['boxes'].remove(elem)
+                # groundtruth_data[image_fname]['boxes'].pop(elem_idx)
+                precision.append(TP/(TP+FP))
+                recall.append(TP/total_positives)
+            
+            else:
+                FP += 1
     
 
     # Max to the right
@@ -189,53 +202,61 @@ def compute_AP(preds_list, labels_dict, iou_level=0.5):
 
 
 # Function: Compute mAP
-def compute_mAP(preds, labels):
-    labels_dict = dict()
+def compute_mAP(predictions_data, groundtruth_data):
+    
+    # TODO: Erase uppon review
+    # labels_dict = dict()
     # print(preds)
     # print(labels)
 
     # Create labels_dict {image_fname:boxes}
-    for row in labels:
-        labels_dict[row[0]] = row[1]
+    # for row in labels:
+        # labels_dict[row[0]] = row[1]
     
     # return mAP
-    APs = [compute_AP(preds, labels_dict, iou) for iou in np.arange(0.5, 1.0, 0.05)]
+    APs = [compute_AP(predictions_data, groundtruth_data, iou) for iou in np.arange(0.5, 1.0, 0.05)]
     
     return np.mean(APs), APs
 
 
 
 # Function: Compute mAP from files
-def compute_mAP_from_files(preds_file, labels_file):
+def compute_mAP_from_files(groundtruth_json, predictions_json):
     
+    # TODO: Erase uppon review
     # Convert labels
-    labels = list()
+    # labels = list()
     
     # Convert labels to the right format (dict of lists) [image_fname] -> [box1, box2, ...]
     # Open train JSON file
-    with open(labels_file, 'r') as j:
+    with open(groundtruth_json, 'r') as j:
 
         # Load JSON contents
-        json_data = json.loads(j.read())
-            
-    for key, value in json_data.items():
+        groundtruth_data = json.loads(j.read())
+    
+
+    # TODO: Erase uppon review
+    # for key, value in json_data.items():
         # TODO: Define a label system based on JSON, that will be used in the competition
-        labels.append([key, [value[0]]])
+        # labels.append([key, [value[0]]])
 
 
+    # TODO: Erase uppon review
     # Convert prediction
-    preds = list()
+    # preds = list()
     
     # Convert predictions to the right format (list) [image_fname, [x, y, x+w, y+h], score]
-    with open(preds_file, 'r') as j:
+    with open(predictions_json, 'r') as j:
+        
         # Load JSON contents
-        json_data = json.loads(j.read())
-            
-    for key, value in json_data.items():
-        preds.append([key, value[0], value[1]])
+        predictions_data = json.loads(j.read())
+
+    # TODO: Erase uppon review   
+    # for key, value in json_data.items():
+        # preds.append([key, value[0], value[1]])
     
     
-    return compute_mAP(preds, labels)
+    return compute_mAP(predictions_data=predictions_data, groundtruth_data=groundtruth_data)
 
 
 
