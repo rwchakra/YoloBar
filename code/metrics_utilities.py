@@ -83,7 +83,7 @@ def compute_masks_AP(predictions_data, groundtruth_data, predictions_dir=None, g
             if len(possible_matches) == 0:
                 FP += 1
                 continue        
-
+   
 
             # Compute IoU for all the bounding-boxes
             ious_elems = list()
@@ -91,14 +91,25 @@ def compute_masks_AP(predictions_data, groundtruth_data, predictions_dir=None, g
             for x_idx, x in enumerate(possible_matches):
                 
                 # Open predicted mask
-                mask_ = Image.open(os.path.join(predictions_dir, image_fname.split('.')[0], mask)).convert('L')
-                mask_ = np.asarray(mask_.copy(), dtype=np.uint8)
+                if predictions_dir:
+                    mask_ = Image.open(os.path.join(predictions_dir, image_fname.split('.')[0], mask)).convert('L')
+                    mask_ = np.asarray(mask_.copy(), dtype=np.uint8)
+                
+                else:
+                    mask_ = np.asarray(mask.copy(), dtype=np.uint8)
+                
                 # print(f"Mask, Max {mask_.max()} Min {mask_.min()}")
 
                 # Open ground-truth mask
-                x_ = Image.open(os.path.join(groundtruth_dir, image_fname.split('.')[0], x)).convert('L')
-                x_ = np.asarray(x_.copy(), dtype=np.uint8)
+                if groundtruth_dir:
+                    x_ = Image.open(os.path.join(groundtruth_dir, image_fname.split('.')[0], x)).convert('L')
+                    x_ = np.asarray(x_.copy(), dtype=np.uint8)
+                
+                else:
+                    x_ = np.asarray(x.copy(), dtype=np.uint8)
+                
                 # print(f"X, Max {x_.max()} Min {x_.min()}")
+
 
                 # Add IoU to ious_elems
                 ious_elems.append((IOU_mask(mask_, x_), x, x_idx))
