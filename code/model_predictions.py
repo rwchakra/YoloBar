@@ -37,7 +37,7 @@ if not os.path.isdir(os.path.join("results", "predictions")):
 
 
 # Create test set with transforms
-test_transforms = get_transform(training=False, data_augment=False, img_size=args.img_size)
+test_transforms = get_transform(training=False, data_augment=False, img_size=IMG_SIZE)
 test_set = LoggiPackageDataset(data_dir="data", training=False, transforms=test_transforms)
 test_loader = DataLoader(test_set, batch_size=1, shuffle=False)
 

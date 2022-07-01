@@ -32,6 +32,7 @@ BATCH_SIZE = 1
 NUM_EPOCHS = 1
 IMG_SIZE = 1024
 IOU_RANGE = np.arange(0.5, 1, 0.05)
+VAL_MAP_FREQ = 1
 
 # Directories
 DATA_DIR = "data_participants"
@@ -139,112 +140,113 @@ for epoch in range(NUM_EPOCHS):
 
     
 
-    # Validation Phase
-    print("Validation Phase")
-    model.eval()
+    if epoch % VAL_MAP_FREQ == 0 and epoch > 0:
+        # Validation Phase
+        print("Validation Phase")
+        model.eval()
 
-    # Create dictionaries for ground-truth and predictions
-    groundtruth_data = dict()
-    predictions_data = dict()
+        # Create dictionaries for ground-truth and predictions
+        groundtruth_data = dict()
+        predictions_data = dict()
 
-    with torch.no_grad():
+        with torch.no_grad():
+            
+            # Go through validation loader
+            for images, targets, image_fnames in tqdm.tqdm(val_loader):
+
+                # Load data
+                images = list(img.to(DEVICE) for img in images)
+                targets_ = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
+                image_fnames_ = [f for f in image_fnames]
+                outputs = model(images, targets)
+
+
+                # Add to ground truth list
+                for out, t, fname in zip(outputs, targets_, image_fnames_):
+
+                    # Create dictionaries for groundtruth data
+                    groundtruth_data[fname] = dict()
+                    groundtruth_data[fname]['boxes'] = list()
+                    groundtruth_data[fname]['scores'] = list()
+                    groundtruth_data[fname]['masks'] = list()
+
+                    # i = 0
+                    for bb, mask in zip(t["boxes"], t["masks"]):
+                        # Bounding-boxes
+                        groundtruth_data[fname]['boxes'].append(list(bb.detach().cpu().numpy()))
+                        
+                        # Masks
+                        # msk_fname = f"{i}.jpg"
+                        # groundtruth_data[fname]['masks'].append(msk_fname)
+                        # print(f'Masks shape: {t["masks"].shape}')
+
+                        # Save masks into directory
+                        msk_ = mask.detach().cpu().numpy().copy()
+                        groundtruth_data[fname]['masks'].append(msk_)
+                        
+                        # pil_mask = Image.fromarray(msk_).convert("L")
+                        
+                        # Save into temporary directory
+                        # if not os.path.isdir(os.path.join("results", "validation", "masks", "gt", fname.split('.')[0])):
+                            # os.makedirs(os.path.join("results", "validation", "masks", "gt", fname.split('.')[0]))
+                
+                        # pil_mask.save(os.path.join("results", "validation", "masks",  "gt", fname.split('.')[0], msk_fname))
+
+                        # Update i (idx)
+                        # i += 1
+
+
+                    # Create dictionaries for predictions data
+                    predictions_data[fname] = dict()
+                    predictions_data[fname]['boxes'] = list()
+                    predictions_data[fname]['scores'] = list()
+                    predictions_data[fname]['masks'] = list()
+
+                    # j = 0
+                    for bb, mask, score in zip(out["boxes"], out["masks"], out["scores"]):
+                        # Bounding-boxes
+                        predictions_data[fname]['boxes'].append(list(bb.detach().cpu().numpy()))
+
+                        # Scores
+                        predictions_data[fname]['scores'].append(float(score.detach().cpu()))
+
+                        # Masks
+                        # msk_fname = f"{i}.jpg"
+                        # predictions_data[fname]['masks'].append(msk_fname)
+
+                        # Save masks into directory
+                        msk_ = np.squeeze(a=mask.detach().cpu().numpy().copy(), axis=0)
+                        predictions_data[fname]['masks'].append(msk_)
+                        # pil_mask = Image.fromarray(msk_).convert("L")
+                        
+                        # Save into temporary directory
+                        # if not os.path.isdir(os.path.join("results", "validation", "masks", "pred", fname.split('.')[0])):
+                            # os.makedirs(os.path.join("results", "validation", "masks", "pred", fname.split('.')[0]))
+                
+                        # pil_mask.save(os.path.join("results", "validation", "masks",  "pred", fname.split('.')[0], msk_fname))
+
+                        # Update j (idx)
+                        # j += 1
         
-        # Go through validation loader
-        for images, targets, image_fnames in tqdm.tqdm(val_loader):
 
-            # Load data
-            images = list(img.to(DEVICE) for img in images)
-            targets_ = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
-            image_fnames_ = [f for f in image_fnames]
-            outputs = model(images, targets)
+        # TODO: Erase uppon review
+        # Compute validation metrics
+        # predictions_dir = os.path.join("results", "validation", "masks",  "pred")
+        # groundtruth_dir = os.path.join("results", "validation", "masks",  "gt")
 
+        # bboxes_mAP, bboxes_APs, masks_mAP, masks_APs = compute_mAP_metrics(predictions_data, groundtruth_data, predictions_dir, groundtruth_dir)
+        bboxes_mAP, bboxes_APs, masks_mAP, masks_APs = compute_mAP_metrics(predictions_data, groundtruth_data)
+        
 
-            # Add to ground truth list
-            for out, t, fname in zip(outputs, targets_, image_fnames_):
-
-                # Create dictionaries for groundtruth data
-                groundtruth_data[fname] = dict()
-                groundtruth_data[fname]['boxes'] = list()
-                groundtruth_data[fname]['scores'] = list()
-                groundtruth_data[fname]['masks'] = list()
-
-                # i = 0
-                for bb, mask in zip(t["boxes"], t["masks"]):
-                    # Bounding-boxes
-                    groundtruth_data[fname]['boxes'].append(list(bb.detach().cpu().numpy()))
-                    
-                    # Masks
-                    # msk_fname = f"{i}.jpg"
-                    # groundtruth_data[fname]['masks'].append(msk_fname)
-                    # print(f'Masks shape: {t["masks"].shape}')
-
-                    # Save masks into directory
-                    msk_ = mask.detach().cpu().numpy().copy()
-                    groundtruth_data[fname]['masks'].append(msk_)
-                    
-                    # pil_mask = Image.fromarray(msk_).convert("L")
-                    
-                    # Save into temporary directory
-                    # if not os.path.isdir(os.path.join("results", "validation", "masks", "gt", fname.split('.')[0])):
-                        # os.makedirs(os.path.join("results", "validation", "masks", "gt", fname.split('.')[0]))
-            
-                    # pil_mask.save(os.path.join("results", "validation", "masks",  "gt", fname.split('.')[0], msk_fname))
-
-                    # Update i (idx)
-                    # i += 1
-
-
-                # Create dictionaries for predictions data
-                predictions_data[fname] = dict()
-                predictions_data[fname]['boxes'] = list()
-                predictions_data[fname]['scores'] = list()
-                predictions_data[fname]['masks'] = list()
-
-                # j = 0
-                for bb, mask, score in zip(out["boxes"], out["masks"], out["scores"]):
-                    # Bounding-boxes
-                    predictions_data[fname]['boxes'].append(list(bb.detach().cpu().numpy()))
-
-                    # Scores
-                    predictions_data[fname]['scores'].append(float(score.detach().cpu()))
-
-                    # Masks
-                    # msk_fname = f"{i}.jpg"
-                    # predictions_data[fname]['masks'].append(msk_fname)
-
-                    # Save masks into directory
-                    msk_ = np.squeeze(a=mask.detach().cpu().numpy().copy(), axis=0)
-                    predictions_data[fname]['masks'].append(msk_)
-                    # pil_mask = Image.fromarray(msk_).convert("L")
-                    
-                    # Save into temporary directory
-                    # if not os.path.isdir(os.path.join("results", "validation", "masks", "pred", fname.split('.')[0])):
-                        # os.makedirs(os.path.join("results", "validation", "masks", "pred", fname.split('.')[0]))
-            
-                    # pil_mask.save(os.path.join("results", "validation", "masks",  "pred", fname.split('.')[0], msk_fname))
-
-                    # Update j (idx)
-                    # j += 1
-    
-
-    # TODO: Erase uppon review
-    # Compute validation metrics
-    # predictions_dir = os.path.join("results", "validation", "masks",  "pred")
-    # groundtruth_dir = os.path.join("results", "validation", "masks",  "gt")
-
-    # bboxes_mAP, bboxes_APs, masks_mAP, masks_APs = compute_mAP_metrics(predictions_data, groundtruth_data, predictions_dir, groundtruth_dir)
-    bboxes_mAP, bboxes_APs, masks_mAP, masks_APs = compute_mAP_metrics(predictions_data, groundtruth_data)
-    
-
-    # Bounding-boxes mAP
-    print("Bounding-boxes mAP:{:.3f}".format(bboxes_mAP))
-    for ap_metric, iou in zip(bboxes_APs, IOU_RANGE):
-        print("\tBounding-boxes AP at IoU level [{:.2f}]: {:.3f}".format(iou, ap_metric))
-    
-    # Masks mAP
-    print("Masks mAP:{:.3f}".format(masks_mAP))
-    for ap_metric, iou in zip(masks_APs, IOU_RANGE):
-        print("\tMasks AP at IoU level [{:.2f}]: {:.3f}".format(iou, ap_metric))
+        # Bounding-boxes mAP
+        print("Bounding-boxes mAP:{:.3f}".format(bboxes_mAP))
+        for ap_metric, iou in zip(bboxes_APs, IOU_RANGE):
+            print("\tBounding-boxes AP at IoU level [{:.2f}]: {:.3f}".format(iou, ap_metric))
+        
+        # Masks mAP
+        print("Masks mAP:{:.3f}".format(masks_mAP))
+        for ap_metric, iou in zip(masks_APs, IOU_RANGE):
+            print("\tMasks AP at IoU level [{:.2f}]: {:.3f}".format(iou, ap_metric))
 
 
 
