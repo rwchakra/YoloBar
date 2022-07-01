@@ -49,9 +49,9 @@ def IOU_mask(predicted_mask, groundtruth_mask, iou_type=2):
 
 
 
-# Function: Compute Boundin-Boxes AP
+# Function: Compute Bounding-Boxes AP
 # Adapted from: https://towardsdatascience.com/breaking-down-mean-average-precision-map-ae462f623a52#1a59
-def compute_masks_AP(predictions_data, predictions_dir, groundtruth_data, groundtruth_dir, iou_level=0.5):
+def compute_masks_AP(predictions_data, groundtruth_data, predictions_dir=None, groundtruth_dir=None, iou_level=0.5):
     
     # Create two lists for precision and recall values
     precision = list()
@@ -253,14 +253,14 @@ def compute_bboxes_AP(predictions_data, groundtruth_data, iou_level=0.5):
 
 
 # Function: Compute mAP
-def compute_mAP_metrics(predictions_data, predictions_dir, groundtruth_data, groundtruth_dir, iou_range=np.arange(0.5, 1.0, 0.05)):
+def compute_mAP_metrics(predictions_data, groundtruth_data, predictions_dir, groundtruth_dir, iou_range=np.arange(0.5, 1.0, 0.05)):
     
     # Get bounding-boxes APs and mAP
     bboxes_APs = [compute_bboxes_AP(predictions_data, groundtruth_data, iou) for iou in iou_range]
     bboxes_mAP = np.mean(bboxes_APs)
 
     # Get masks APs and mAP
-    masks_APs = [compute_masks_AP(predictions_data, predictions_dir, groundtruth_data, groundtruth_dir, iou) for iou in iou_range]
+    masks_APs = [compute_masks_AP(predictions_data, groundtruth_data, predictions_dir, groundtruth_dir, iou) for iou in iou_range]
     masks_mAP = np.mean(masks_APs)
     
     return bboxes_mAP, bboxes_APs, masks_mAP, masks_APs
