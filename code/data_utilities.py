@@ -309,7 +309,7 @@ class LoggiPackageDataset(Dataset):
 
         # Load JSON file in the data directory
         if self.training:
-            json_file = os.path.join(self.data_dir, "json", "challenge", "train_challenge.json")
+            json_file = os.path.join(self.data_dir, "challenge", "train_challenge.json")
         
         else:
             json_file = os.path.join(self.data_dir, "json", "challenge", "test_challenge.json")

@@ -17,13 +17,14 @@ from model_utilities import LoggiBarcodeDetectionModel
 
 
 
-# CLI Arguments
-parser = argparse.ArgumentParser(description = 'description')
-parser.add_argument('--img_size', type = int, default = 1024, help="new size for img resize transform.")
-args = parser.parse_args()
+# TODO: CLI Arguments (TO REMOVE)
+# parser = argparse.ArgumentParser(description = 'description')
+# parser.add_argument('--img_size', type = int, default = 1024, help="new size for img resize transform.")
+# args = parser.parse_args()
 
 
 # Constant variables
+IMG_SIZE = 1024
 NMS_THRESHOLD = 0.1
 SAVED_MODEL = os.path.join("results", "models", "visum2022.pt")
 DATA_DIR = "data"

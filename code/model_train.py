@@ -19,19 +19,22 @@ from metrics_utilities import compute_mAP_metrics
 # Random seeds
 torch.manual_seed(42)
 
-# Args for training
-parser = argparse.ArgumentParser(description = 'description')
-parser.add_argument('--batch_size', type = int, default = 1)
-parser.add_argument('--num_epochs', type = int, default = 1)
-parser.add_argument('--img_size', type = int, default = 1024, help="new size for img resize transform.")
-args = parser.parse_args()
+# TODO: Remove uppon review args for training
+# parser = argparse.ArgumentParser(description = 'description')
+# parser.add_argument('--batch_size', type = int, default = 1)
+# parser.add_argument('--num_epochs', type = int, default = 1)
+# parser.add_argument('--img_size', type = int, default = 1024, help="new size for img resize transform.")
+# args = parser.parse_args()
 
 
 # Constant variables
+BATCH_SIZE = 1
+NUM_EPOCHS = 1
+IMG_SIZE = 1024
 IOU_RANGE = np.arange(0.5, 1, 0.05)
 
 # Directories
-DATA_DIR = "data"
+DATA_DIR = "data_participants"
 SAVE_MODEL_DIR = "results/models"
 if not os.path.isdir(SAVE_MODEL_DIR):
     os.makedirs(SAVE_MODEL_DIR)
@@ -40,8 +43,8 @@ if not os.path.isdir(SAVE_MODEL_DIR):
 
 # Prepare data
 # First, we create two train sets with different transformations (we will use the one w/out transforms as validation set)
-dataset = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(training=True, data_augment=True, img_size=args.img_size))
-dataset_notransforms = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(training=True, data_augment=False, img_size=args.img_size))
+dataset = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(training=True, data_augment=True, img_size=IMG_SIZE))
+dataset_notransforms = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(training=True, data_augment=False, img_size=IMG_SIZE))
 
 # Split the dataset into train and validation sets
 indices = torch.randperm(len(dataset)).tolist()
@@ -51,9 +54,6 @@ train_set = torch.utils.data.Subset(dataset, indices[:-299])
 val_set = torch.utils.data.Subset(dataset_notransforms, indices[-299:])
 
 # DataLoaders
-# Define batch size
-BATCH_SIZE = args.batch_size
-
 # Train loader
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, collate_fn=collate_fn)
 
@@ -79,10 +79,6 @@ model.to(DEVICE)
 # Define an optimizer
 model_params = [p for p in model.parameters() if p.requires_grad]
 optimizer = torch.optim.SGD(model_params, lr=0.005, momentum=0.9, weight_decay=0.0005)
-
-
-# Define the number of epochs
-NUM_EPOCHS = args.num_epochs
 
 
 # Start the training and validation loops

@@ -11,7 +11,7 @@ from torchinfo import summary
 
 # Model: LoggiBarcodeDetectionModel
 class LoggiBarcodeDetectionModel(torch.nn.Module):
-    def __init__(self, nr_classes=2, backbone="mobilenet_v2", backbone_pretrained=True):
+    def __init__(self, min_img_size=800, max_img_size=1333, nr_classes=2, backbone="mobilenet_v2", backbone_pretrained=True):
         super(LoggiBarcodeDetectionModel, self).__init__()
 
         # Init variables
@@ -39,7 +39,7 @@ class LoggiBarcodeDetectionModel(torch.nn.Module):
             mask_roi_pooler = torchvision.ops.MultiScaleRoIAlign(featmap_names=['0'], output_size=14, sampling_ratio=2)
 
             # Put the pieces together inside a MaskRCNN model
-            self.model = MaskRCNN(backbone_, num_classes=2, rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler, mask_roi_pool=mask_roi_pooler)
+            self.model = MaskRCNN(backbone_, min_size=min_img_size, max_size=max_img_size, num_classes=2, rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler, mask_roi_pool=mask_roi_pooler)
 
 
         # You can add your backbones here...
