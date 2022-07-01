@@ -12,7 +12,7 @@ import torch.utils.data
 # Project Imports
 from data_utilities import get_transform, collate_fn, LoggiPackageDataset
 from model_utilities import LoggiBarcodeDetectionModel
-from metrics_utilities import compute_mAP_metrics
+from metrics_utilities import compute_mAP_metrics, visum2022score
 
 
 
@@ -140,7 +140,7 @@ for epoch in range(NUM_EPOCHS):
 
     
 
-    if epoch % VAL_MAP_FREQ == 0 and epoch > 0:
+    if (epoch % VAL_MAP_FREQ == 0 and epoch > 0) or (epoch == NUM_EPOCHS - 1):
         # Validation Phase
         print("Validation Phase")
         model.eval()
@@ -247,6 +247,10 @@ for epoch in range(NUM_EPOCHS):
         print("Masks mAP:{:.3f}".format(masks_mAP))
         for ap_metric, iou in zip(masks_APs, IOU_RANGE):
             print("\tMasks AP at IoU level [{:.2f}]: {:.3f}".format(iou, ap_metric))
+
+
+        # Compute VISUM SCORE 2022
+        score = visum2022score(bboxes_mAP=bboxes_mAP, masks_mAP=masks_APs)
 
 
 
