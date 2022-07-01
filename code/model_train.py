@@ -228,7 +228,7 @@ for epoch in range(NUM_EPOCHS):
     predictions_dir = os.path.join("results", "validation", "masks",  "pred")
     groundtruth_dir = os.path.join("results", "validation", "masks",  "gt")
 
-    bboxes_mAP, bboxes_APs, masks_mAP, masks_APs = compute_mAP_metrics(predictions_data, predictions_dir, groundtruth_data, groundtruth_dir)
+    bboxes_mAP, bboxes_APs, masks_mAP, masks_APs = compute_mAP_metrics(predictions_data, groundtruth_data, predictions_dir, groundtruth_dir)
     
 
     # Bounding-boxes mAP
