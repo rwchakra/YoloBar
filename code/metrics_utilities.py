@@ -264,7 +264,7 @@ def compute_bboxes_AP(predictions_data, groundtruth_data, iou_level=0.5):
 
 
 # Function: Compute mAP
-def compute_mAP_metrics(predictions_data, groundtruth_data, predictions_dir, groundtruth_dir, iou_range=np.arange(0.5, 1.0, 0.05)):
+def compute_mAP_metrics(predictions_data, groundtruth_data, predictions_dir=None, groundtruth_dir=None, iou_range=np.arange(0.5, 1.0, 0.05)):
     
     # Get bounding-boxes APs and mAP
     bboxes_APs = [compute_bboxes_AP(predictions_data, groundtruth_data, iou) for iou in iou_range]
