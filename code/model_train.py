@@ -168,28 +168,30 @@ for epoch in range(NUM_EPOCHS):
                 groundtruth_data[fname]['scores'] = list()
                 groundtruth_data[fname]['masks'] = list()
 
-                i = 0
+                # i = 0
                 for bb, mask in zip(t["boxes"], t["masks"]):
                     # Bounding-boxes
                     groundtruth_data[fname]['boxes'].append(list(bb.detach().cpu().numpy()))
                     
                     # Masks
-                    msk_fname = f"{i}.jpg"
-                    groundtruth_data[fname]['masks'].append(msk_fname)
+                    # msk_fname = f"{i}.jpg"
+                    # groundtruth_data[fname]['masks'].append(msk_fname)
                     # print(f'Masks shape: {t["masks"].shape}')
 
                     # Save masks into directory
                     msk_ = mask.detach().cpu().numpy().copy()
-                    pil_mask = Image.fromarray(msk_).convert("L")
+                    groundtruth_data[fname]['masks'].append(msk_)
+                    
+                    # pil_mask = Image.fromarray(msk_).convert("L")
                     
                     # Save into temporary directory
-                    if not os.path.isdir(os.path.join("results", "validation", "masks", "gt", fname.split('.')[0])):
-                        os.makedirs(os.path.join("results", "validation", "masks", "gt", fname.split('.')[0]))
+                    # if not os.path.isdir(os.path.join("results", "validation", "masks", "gt", fname.split('.')[0])):
+                        # os.makedirs(os.path.join("results", "validation", "masks", "gt", fname.split('.')[0]))
             
-                    pil_mask.save(os.path.join("results", "validation", "masks",  "gt", fname.split('.')[0], msk_fname))
+                    # pil_mask.save(os.path.join("results", "validation", "masks",  "gt", fname.split('.')[0], msk_fname))
 
                     # Update i (idx)
-                    i += 1
+                    # i += 1
 
 
                 # Create dictionaries for predictions data
@@ -198,7 +200,7 @@ for epoch in range(NUM_EPOCHS):
                 predictions_data[fname]['scores'] = list()
                 predictions_data[fname]['masks'] = list()
 
-                j = 0
+                # j = 0
                 for bb, mask, score in zip(out["boxes"], out["masks"], out["scores"]):
                     # Bounding-boxes
                     predictions_data[fname]['boxes'].append(list(bb.detach().cpu().numpy()))
@@ -207,28 +209,31 @@ for epoch in range(NUM_EPOCHS):
                     predictions_data[fname]['scores'].append(float(score.detach().cpu()))
 
                     # Masks
-                    msk_fname = f"{i}.jpg"
-                    predictions_data[fname]['masks'].append(msk_fname)
+                    # msk_fname = f"{i}.jpg"
+                    # predictions_data[fname]['masks'].append(msk_fname)
 
                     # Save masks into directory
                     msk_ = np.squeeze(a=mask.detach().cpu().numpy().copy(), axis=0)
-                    pil_mask = Image.fromarray(msk_).convert("L")
+                    predictions_data[fname]['masks'].append(msk_)
+                    # pil_mask = Image.fromarray(msk_).convert("L")
                     
                     # Save into temporary directory
-                    if not os.path.isdir(os.path.join("results", "validation", "masks", "pred", fname.split('.')[0])):
-                        os.makedirs(os.path.join("results", "validation", "masks", "pred", fname.split('.')[0]))
+                    # if not os.path.isdir(os.path.join("results", "validation", "masks", "pred", fname.split('.')[0])):
+                        # os.makedirs(os.path.join("results", "validation", "masks", "pred", fname.split('.')[0]))
             
-                    pil_mask.save(os.path.join("results", "validation", "masks",  "pred", fname.split('.')[0], msk_fname))
+                    # pil_mask.save(os.path.join("results", "validation", "masks",  "pred", fname.split('.')[0], msk_fname))
 
                     # Update j (idx)
-                    j += 1
+                    # j += 1
     
 
+    # TODO: Erase uppon review
     # Compute validation metrics
-    predictions_dir = os.path.join("results", "validation", "masks",  "pred")
-    groundtruth_dir = os.path.join("results", "validation", "masks",  "gt")
+    # predictions_dir = os.path.join("results", "validation", "masks",  "pred")
+    # groundtruth_dir = os.path.join("results", "validation", "masks",  "gt")
 
-    bboxes_mAP, bboxes_APs, masks_mAP, masks_APs = compute_mAP_metrics(predictions_data, groundtruth_data, predictions_dir, groundtruth_dir)
+    # bboxes_mAP, bboxes_APs, masks_mAP, masks_APs = compute_mAP_metrics(predictions_data, groundtruth_data, predictions_dir, groundtruth_dir)
+    bboxes_mAP, bboxes_APs, masks_mAP, masks_APs = compute_mAP_metrics(predictions_data, groundtruth_data)
     
 
     # Bounding-boxes mAP
