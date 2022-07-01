@@ -57,7 +57,7 @@ def compute_masks_AP(predictions_data, predictions_dir, groundtruth_data, ground
     precision = list()
     recall = list()
     
-    # Copy the labels dict since we gonna edit it
+    # Copy the labels dict since we are going to edit it
     groundtruth_data = copy.deepcopy(groundtruth_data)
     
     # Initialize true positives (TP) and false positives (FP) to zero
@@ -88,7 +88,7 @@ def compute_masks_AP(predictions_data, predictions_dir, groundtruth_data, ground
             # Compute IoU for all the bounding-boxes
             ious_elems = list()
             # ious_elems = [(IOU_mask(mask, x), x) for x in possible_matches]
-            for x in possible_matches:
+            for x_idx, x in enumerate(possible_matches):
                 
                 # Open predicted mask
                 mask_ = Image.open(os.path.join(predictions_dir, image_fname.split('.')[0], mask)).convert('L')
@@ -101,7 +101,7 @@ def compute_masks_AP(predictions_data, predictions_dir, groundtruth_data, ground
                 # print(f"X, Max {x_.max()} Min {x_.min()}")
 
                 # Add IoU to ious_elems
-                ious_elems.append((IOU_mask(mask_, x_), x))
+                ious_elems.append((IOU_mask(mask_, x_), x, x_idx))
                 
             
             
@@ -110,14 +110,15 @@ def compute_masks_AP(predictions_data, predictions_dir, groundtruth_data, ground
 
 
             # Select the top_match
-            iou, elem = ious_elems[0]
+            iou, elem, elem_idx = ious_elems[0]
             
             # Check the IoU threshold
             if iou >= iou_level:
                 TP += 1
                 
                 # Remove the used element, so we don't repeat it in next iteration
-                groundtruth_data[image_fname]['masks'].remove(elem)
+                # groundtruth_data[image_fname]['masks'].remove(elem)
+                groundtruth_data[image_fname]['masks'].pop(elem_idx)
                 precision.append(TP/(TP+FP))
                 recall.append(TP/total_positives)
             
