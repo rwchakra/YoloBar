@@ -19,14 +19,6 @@ from metrics_utilities import compute_mAP_metrics, visum2022score
 # Random seeds
 torch.manual_seed(42)
 
-# TODO: Remove uppon review args for training
-# parser = argparse.ArgumentParser(description = 'description')
-# parser.add_argument('--batch_size', type = int, default = 1)
-# parser.add_argument('--num_epochs', type = int, default = 1)
-# parser.add_argument('--img_size', type = int, default = 1024, help="new size for img resize transform.")
-# args = parser.parse_args()
-
-
 # Constant variables
 BATCH_SIZE = 1
 NUM_EPOCHS = 1
@@ -251,6 +243,7 @@ for epoch in range(NUM_EPOCHS):
 
         # Compute VISUM SCORE 2022
         score = visum2022score(bboxes_mAP=bboxes_mAP, masks_mAP=masks_APs)
+        print(f"VISUM2020 Score on Validation: {score}")
 
 
 

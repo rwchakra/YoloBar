@@ -16,13 +16,6 @@ from data_utilities import get_transform, LoggiPackageDataset
 from model_utilities import LoggiBarcodeDetectionModel
 
 
-
-# TODO: CLI Arguments (TO REMOVE)
-# parser = argparse.ArgumentParser(description = 'description')
-# parser.add_argument('--img_size', type = int, default = 1024, help="new size for img resize transform.")
-# args = parser.parse_args()
-
-
 # Constant variables
 IMG_SIZE = 1024
 NMS_THRESHOLD = 0.1
