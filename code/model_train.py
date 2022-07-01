@@ -67,7 +67,7 @@ print(f"Using device: {DEVICE}")
 
 
 # Define model
-model = LoggiBarcodeDetectionModel()
+model = LoggiBarcodeDetectionModel(min_img_size=IMG_SIZE, max_img_size=IMG_SIZE)
 
 # Print model summary
 model_summary = model.summary()
