@@ -13,7 +13,6 @@ from model_utilities import LoggiBarcodeDetectionModel, evaluate, visum2022score
 
 # Constant variables
 IMG_SIZE = 1024
-NMS_THRESHOLD = 0.1
 SAVED_MODEL = os.path.join("results", "models", "visum2022.pt")
 DATA_DIR = "data"
 DEVICE = torch.device(
