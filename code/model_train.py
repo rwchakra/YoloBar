@@ -18,9 +18,9 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 # Constant variables
-BATCH_SIZE = 4
-NUM_EPOCHS = 2
-IMG_SIZE = 512
+BATCH_SIZE = 1
+NUM_EPOCHS = 1
+IMG_SIZE = 1024
 IOU_RANGE = np.arange(0.5, 1, 0.05)
 VAL_MAP_FREQ = 1
 
@@ -35,10 +35,10 @@ tb = SummaryWriter(log_dir="results/tensorboard", flush_secs=10)
 
 # Prepare data
 # First, we create two train sets with different transformations (we will use the one w/out transforms as validation set)
-dataset = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(
-    training=True, data_augment=True, img_size=IMG_SIZE))
-dataset_notransforms = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(
-    training=True, data_augment=False, img_size=IMG_SIZE))
+dataset = LoggiPackageDataset(data_dir=DATA_DIR, training=True,
+                              transforms=get_transform(data_augment=True, img_size=IMG_SIZE))
+dataset_notransforms = LoggiPackageDataset(
+    data_dir=DATA_DIR, training=True, transforms=get_transform(data_augment=False, img_size=IMG_SIZE))
 
 # Split the dataset into train and validation sets
 indices = torch.randperm(len(dataset)).tolist()
@@ -165,7 +165,12 @@ for epoch in range(NUM_EPOCHS):
         tb.add_scalar('eval/segm_map', segm_map, epoch)
         tb.add_scalar('eval/visum_score', visum_score, epoch)
 
-    torch.save(model.state_dict(), os.path.join(SAVE_MODEL_DIR, "visum2022.pt"))
+    torch.save({
+        'epoch': epoch,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+    }, os.path.join(
+        SAVE_MODEL_DIR, "visum2022.pt"))
 
     print(
         f"Model successfully saved at {os.path.join(SAVE_MODEL_DIR, 'visum2022.pt')}")
