@@ -1,4 +1,5 @@
 # Imports
+import sys
 import os
 import numpy as np
 
@@ -6,6 +7,7 @@ import numpy as np
 from metrics_utilities import compute_mAP_metrics_from_files, visum2022score
 
 
+# TODO: Change data paths according to Eduardo's editions
 # Directories and File Paths
 DATA_DIR = "data"
 PREDICTIONS_DIR = "predictions"
