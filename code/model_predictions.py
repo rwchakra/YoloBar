@@ -13,7 +13,7 @@ from torchvision.ops import nms
 
 # Project Imports
 from data_utilities import get_transform, LoggiPackageDataset
-from model_utilities import LoggiBarcodeDetectionModel
+from model_utilities import LoggiBarcodeDetectionModel, evaluate, visum2022score
 
 
 # Constant variables
@@ -25,8 +25,8 @@ DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 
 # Directories
-if not os.path.isdir(os.path.join("results", "predictions")):
-    os.makedirs(os.path.join("results", "predictions"))
+# if not os.path.isdir(os.path.join("results", "predictions")):
+#     os.makedirs(os.path.join("results", "predictions"))
 
 
 # Create test set with transforms
@@ -46,69 +46,90 @@ model.eval()
 
 
 # Create dict() to append predictions
-predictions = dict()
+# predictions = dict()
 
 
-# Go through test set
-for image, target, image_fname in tqdm.tqdm(test_loader):
+# Get all the metric results on test set
+eval_results = evaluate(model, test_loader, DEVICE)
 
-    # Add a dict to bounding-boxes and scores predictions
-    predictions[image_fname[0]] = dict()
-    predictions[image_fname[0]]['boxes'] = list()
-    predictions[image_fname[0]]['scores'] = list()
-    predictions[image_fname[0]]['masks'] = list()
+# Get the bounding-boxes results (for VISUM2022 Score)
+bbox_results = eval_results.coco_eval['bbox']
+bbox_map = bbox_results.stats[0]
+
+# Get the segmentation results (for VISUM2022 Score)
+segm_results = eval_results.coco_eval['segm']
+segm_map = segm_results.stats[0]
+
+# Compute the VISUM2022 Score
+visum_score = visum2022score(bbox_map, segm_map)
 
 
-    # Get predictions
-    with torch.no_grad():
-        prediction = model(image.to(DEVICE), target)
+# Print mAP values
+print(f"Detection mAP: {np.round(bbox_map, 4)}")
+print(f"Segmentation mAP: {np.round(segm_map, 4)}")
+print(f"VISUM Score: {np.round(visum_score, 4)}")
 
-    boxes = prediction[0]['boxes'].cpu()
-    scores = prediction[0]['scores'].cpu()
-    masks = prediction[0]['masks'].cpu()
-    # print(f"Shape of Masks: {masks.shape}")
-    # print(f"Length of Masks: {len(masks)}")
 
-    # NMS
-    nms_indices = nms(boxes, scores, NMS_THRESHOLD)
-    nms_boxes = boxes[nms_indices].tolist()
-    nms_scores = scores[nms_indices].tolist()
-    nms_masks = masks[nms_indices]
+
+# for image, target, image_fname in tqdm.tqdm(test_loader):
+
+#     # Add a dict to bounding-boxes and scores predictions
+#     predictions[image_fname[0]] = dict()
+#     predictions[image_fname[0]]['boxes'] = list()
+#     predictions[image_fname[0]]['scores'] = list()
+#     predictions[image_fname[0]]['masks'] = list()
+
+
+#     # Get predictions
+#     with torch.no_grad():
+#         prediction = model(image.to(DEVICE), target)
+
+#     boxes = prediction[0]['boxes'].cpu()
+#     scores = prediction[0]['scores'].cpu()
+#     masks = prediction[0]['masks'].cpu()
+#     # print(f"Shape of Masks: {masks.shape}")
+#     # print(f"Length of Masks: {len(masks)}")
+
+#     # NMS
+#     nms_indices = nms(boxes, scores, NMS_THRESHOLD)
+#     nms_boxes = boxes[nms_indices].tolist()
+#     nms_scores = scores[nms_indices].tolist()
+#     nms_masks = masks[nms_indices]
     
 
-    # If there are no detections there is no need to include that entry in the predictions
-    if len(nms_boxes) > 0:
-        i = 0
-        for bb, score, msk in zip(nms_boxes, nms_scores, nms_masks):
+#     # If there are no detections there is no need to include that entry in the predictions
+#     if len(nms_boxes) > 0:
+#         i = 0
+#         for bb, score, msk in zip(nms_boxes, nms_scores, nms_masks):
             
-            # Bouding-boxes
-            # predictions.append([image_fname[0], list(bb), score])
-            predictions[image_fname[0]]['boxes'].append(list(bb))
+#             # Bouding-boxes
+#             # predictions.append([image_fname[0], list(bb), score])
+#             predictions[image_fname[0]]['boxes'].append(list(bb))
             
-            # Scores
-            predictions[image_fname[0]]['scores'].append(score)
+#             # Scores
+#             predictions[image_fname[0]]['scores'].append(score)
 
-            # Masks
-            msk_fname = f"{i}.jpg"
-            predictions[image_fname[0]]['masks'].append(msk_fname)
+#             # Masks
+#             msk_fname = f"{i}.jpg"
+#             predictions[image_fname[0]]['masks'].append(msk_fname)
             
             
             
-            # Save masks into directory
-            msk_ = np.squeeze(a=msk.detach().cpu().numpy().copy(), axis=0)
-            pil_mask = Image.fromarray(msk_).convert("L")
+#             # Save masks into directory
+#             msk_ = np.squeeze(a=msk.detach().cpu().numpy().copy(), axis=0)
+#             pil_mask = Image.fromarray(msk_).convert("L")
 
-            if not os.path.isdir(os.path.join("results", "predictions", "masks", image_fname[0].split('.')[0])):
-                os.makedirs(os.path.join("results", "predictions", "masks", image_fname[0].split('.')[0]))
+#             if not os.path.isdir(os.path.join("results", "predictions", "masks", image_fname[0].split('.')[0])):
+#                 os.makedirs(os.path.join("results", "predictions", "masks", image_fname[0].split('.')[0]))
             
-            pil_mask.save(os.path.join("results", "predictions", "masks", image_fname[0].split('.')[0], msk_fname))
+#             pil_mask.save(os.path.join("results", "predictions", "masks", image_fname[0].split('.')[0], msk_fname))
 
-            # Update i (idx)
-            i += 1
+#             # Update i (idx)
+#             i += 1
             
 
-# Save this into a JSON of predictions
-json_object = json.dumps(predictions, indent=4)
+# # Save this into a JSON of predictions
+# json_object = json.dumps(predictions, indent=4)
 
-with open(os.path.join("results", "predictions", "predictions.json"), "w") as j:
-    j.write(json_object)
+# with open(os.path.join("results", "predictions", "predictions.json"), "w") as j:
+#     j.write(json_object)
