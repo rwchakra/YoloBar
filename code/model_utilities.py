@@ -71,7 +71,7 @@ class LoggiBarcodeDetectionModel(torch.nn.Module):
 
 @torch.inference_mode()
 def evaluate(model, data_loader, device):
-    print("Evaluating...")
+    print("\nEvaluating...")
     n_threads = torch.get_num_threads()
     torch.set_num_threads(1)
     cpu_device = torch.device("cpu")
@@ -115,13 +115,3 @@ def visum2022score(bboxes_mAP, masks_mAP, bboxes_mAP_weight=0.5):
     score = (bboxes_mAP_weight * bboxes_mAP) + (masks_mAP_weight * masks_mAP)
 
     return score
-
-
-# Run this file to test the LoggiBarcodeDetectionModel class
-if __name__ == "__main__":
-
-    # Model
-    model = LoggiBarcodeDetectionModel()
-
-    # Print model summary
-    model_summary = summary(model, (1, 3, 1024, 1024))
