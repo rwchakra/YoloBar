@@ -229,40 +229,27 @@ def convert_coco_to_bbox(bbox):
 
 
 # Function: Create a Compose of data transforms (for training)
-def get_transform(training, data_augment, img_size):
+def get_transform(data_augment, img_size):
 
     # Assert conditions
-    assert training in (
-        True, False), f"The 'training' parameter should be a boolean (True, False). You entered {training}."
     assert data_augment in (
         True, False), f"The 'data_augment' parameter should be a boolean (True, False). You entered {data_augment}."
 
     # Initialise transforms to None
     transforms = None
 
-    # During training (training and validation sets)
-    if training:
+    if data_augment:
+        transforms = A.Compose([
+            A.HorizontalFlip(p=0.5),
+            A.Resize(img_size, img_size)
+        ], bbox_params=A.BboxParams(format='coco', label_fields=['bbox_classes']))
 
-        if data_augment:
-            transforms = A.Compose([
-                A.HorizontalFlip(p=0.5),
-                A.Resize(img_size, img_size)
-            ], bbox_params=A.BboxParams(format='coco', label_fields=['bbox_classes']))
-
-        else:
-            transforms = A.Compose([
-                A.Resize(img_size, img_size)
-            ], bbox_params=A.BboxParams(format='coco', label_fields=['bbox_classes']))
-
-        return transforms
-
-    # During test (test set)
     else:
         transforms = A.Compose([
             A.Resize(img_size, img_size)
-        ])
+        ], bbox_params=A.BboxParams(format='coco', label_fields=['bbox_classes']))
 
-        return transforms
+    return transforms
 
 
 # Visualisation tools
@@ -310,10 +297,14 @@ class LoggiPackageDataset(Dataset):
         if self.training:
             json_file = os.path.join(
                 self.data_dir, "challenge", "train_challenge.json")
+            self.imgs_path = os.path.join(self.data_dir, "processed", "train")
+            self.masks_path = os.path.join(self.data_dir, "masks", "train")
 
         else:
             json_file = os.path.join(
                 self.data_dir, "json", "challenge", "test_challenge.json")
+            self.imgs_path = os.path.join(self.data_dir, "raw")
+            self.masks_path = os.path.join(self.data_dir, "masks", "test")
 
         # Open JSON file
         with open(json_file, 'r') as j:
@@ -325,169 +316,85 @@ class LoggiPackageDataset(Dataset):
         self.images = list(json_data.keys())
 
         # Add the "json_data" variable to the class variables
-        self.label_dict = json_data.copy() if self.training else None
+        self.label_dict = json_data.copy()
 
     # Method: __getitem__
 
     def __getitem__(self, idx):
 
-        # Mode
-        if self.training:
+        # Get image data
+        image_fname = self.images[idx]
+        img_path = os.path.join(self.imgs_path, image_fname)
+        image = Image.open(img_path).convert('RGB')
+        image = np.asarray(image)
 
-            # Get image data
-            image_fname = self.images[idx]
-            img_path = os.path.join(
-                self.data_dir, "processed", "train", image_fname)
-            image = Image.open(img_path).convert('RGB')
-            image = np.asarray(image)
+        # Get annotation data
+        # Boxes
+        bboxes = self.label_dict[image_fname]['boxes']
 
-            # Get annotation data
-            # Boxes
-            bboxes = self.label_dict[image_fname]['boxes']
+        # Labels
+        bbox_classes = self.label_dict[image_fname]['labels']
 
-            # Labels
-            bbox_classes = self.label_dict[image_fname]['labels']
+        # Masks
+        masks = self.label_dict[image_fname]['masks']
+        masks = [np.asarray(Image.open(os.path.join(
+            self.masks_path, image_fname.split('.')[0], m)).convert("L")) for m in masks]
 
-            # Masks
-            masks = self.label_dict[image_fname]['masks']
-            masks = [np.asarray(Image.open(os.path.join(
-                self.data_dir, "masks", "train", image_fname.split('.')[0], m)).convert("L")) for m in masks]
+        masks = [(m > int(m.max() / 2)).astype(np.uint8) for m in masks]
 
-            masks = [(m > int(m.max() / 2)).astype(np.uint8) for m in masks]
+        # Apply transforms to both image and target
+        if self.transforms:
 
-            # Apply transforms to both image and target
-            if self.transforms:
+            # We have to convert all the bounding boxes to COCO notation before augmentation
+            bboxes = [convert_bbox_to_coco(b) for b in bboxes]
 
-                # We have to convert all the bounding boxes to COCO notation before augmentation
-                bboxes = [convert_bbox_to_coco(b) for b in bboxes]
+            # Apply transforms
+            transformed = self.transforms(
+                image=image, masks=masks, bboxes=bboxes, bbox_classes=bbox_classes)
 
-                # Apply transforms
-                transformed = self.transforms(
-                    image=image, masks=masks, bboxes=bboxes, bbox_classes=bbox_classes)
+            # Get image
+            image = transformed["image"]
 
-                # Get image
-                image = transformed["image"]
+            # Get masks
+            masks = transformed["masks"]
 
-                # Get masks
-                masks = transformed["masks"]
+            # Get bounding boxes
+            bboxes = transformed["bboxes"]
+            # We must convert into our notation again
+            bboxes = [convert_coco_to_bbox(c) for c in bboxes]
 
-                # Get bounding boxes
-                bboxes = transformed["bboxes"]
-                # We must convert into our notation again
-                bboxes = [convert_coco_to_bbox(c) for c in bboxes]
+            # Get labels
+            bbox_classes = transformed["bbox_classes"]
 
-                # Get labels
-                bbox_classes = transformed["bbox_classes"]
+        # Convert to Tensors
+        image = F.to_tensor(image.copy())
+        masks = torch.as_tensor(np.array(masks), dtype=torch.uint8)
 
-            # Convert to Tensors
-            image = F.to_tensor(image.copy())
-            masks = torch.as_tensor(np.array(masks), dtype=torch.uint8)
+        labels = torch.as_tensor(bbox_classes, dtype=torch.int64)
+        boxes = torch.as_tensor(bboxes, dtype=torch.float32)
 
-            labels = torch.as_tensor(bbox_classes, dtype=torch.int64)
-            boxes = torch.as_tensor(bboxes, dtype=torch.float32)
+        # Area
+        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
 
-            # Area
-            area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0])
+        # Assume all instances are not crowd
+        n_objs = len(bboxes)
+        iscrowd = torch.zeros((n_objs,), dtype=torch.int64)
 
-            # Assume all instances are not crowd
-            n_objs = len(bboxes)
-            iscrowd = torch.zeros((n_objs,), dtype=torch.int64)
+        # Image Index
+        image_id = torch.tensor([idx])
 
-            # Image Index
-            image_id = torch.tensor([idx])
+        # Build the target dictionary for the model
+        target = dict()
+        target["boxes"] = boxes
+        target["labels"] = labels
+        target["masks"] = masks
+        target["area"] = area
+        target["iscrowd"] = iscrowd
+        target["image_id"] = image_id
 
-            # Build the target dictionary for the model
-            target = dict()
-            target["boxes"] = boxes
-            target["labels"] = labels
-            target["masks"] = masks
-            target["area"] = area
-            target["iscrowd"] = iscrowd
-            target["image_id"] = image_id
-
-        else:
-
-            # Get image data
-            image_fname = self.images[idx]
-            img_path = os.path.join(self.data_dir, "raw", image_fname)
-            image = Image.open(img_path).convert('RGB')
-            image = np.asarray(image)
-
-            # For model purposes
-            target = list()
-
-            # Check if we have transforms
-            if self.transforms:
-
-                # Get transformed data
-                transformed = self.transforms(image=image)
-
-                # Get image
-                image = transformed["image"]
-
-            # Convert to Tensors
-            image = F.to_tensor(image.copy())
-
-        return image, target  # , image_fname
+        return image, target
 
     # Method: __len__
 
     def __len__(self):
         return len(self.images)
-
-
-# Run this file to test the Dataset class
-if __name__ == "__main__":
-
-    # Create a LoggiPackageDataset instance
-    # Test different transforms
-    split = 'train'
-    img_size = 1024
-    # Train
-    if split == 'train':
-        transforms = get_transform(
-            training=True, data_augment=True, img_size=img_size)
-
-    elif split == 'validation':
-        transforms = get_transform(
-            training=True, data_augment=False, img_size=img_size)
-
-    elif split == 'test':
-        transforms = get_transform(
-            training=False, data_augment=False, img_size=img_size)
-
-    # Create a dataset
-    print(f"Transforms: {transforms}")
-    dataset = LoggiPackageDataset(
-        data_dir="data_participants", transforms=transforms)
-
-    # Create a DataLoader
-    batch_size = 5
-    dataloader = DataLoader(
-        dataset=dataset, batch_size=batch_size, collate_fn=collate_fn)
-
-    device = torch.device(
-        "cuda") if torch.cuda.is_available() else torch.device("cpu")
-
-    # Iterate through DataLoader
-    for images, targets, image_fname in dataloader:
-
-        # Get images
-        images_ = list(image.to(device) for image in images)
-        targets_ = [{k: v.to(device) for k, v in t.items()} for t in targets]
-
-        # print(images_, targets_)
-
-        for i in range(batch_size):
-            print(f"i: {i}")
-            print(
-                f"Images (shape, min, max): {images_[i].shape}, {torch.min(images[i])}, {torch.max(images[i])}")
-            print(f"Boxes (shape): {targets_[i]['boxes'].shape}")
-            print(f"Labels (shape): {targets_[i]['labels'].shape}")
-            print(
-                f"Masks (shape, min, max): {targets_[i]['masks'].shape}, {torch.min(targets_[i]['masks'])}, {torch.max(targets_[i]['masks'])}")
-            print(f"Image Filename: {image_fname}")
-            print(f"Area of the objects: {targets_[i]['area']}")
-            print(f"Is crowd: {targets_[i]['iscrowd']}")
-
-        break
