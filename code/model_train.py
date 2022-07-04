@@ -103,7 +103,8 @@ for epoch in range(NUM_EPOCHS):
 
         # Load data
         images = [image.to(DEVICE) for image in images]
-        targets_ = [{k: v.to(DEVICE) for k, v in t.items()} for t in targets]
+        targets_ = [{k: v.to(DEVICE) for k, v in t.items()
+                     if k != 'image_fname'} for t in targets]
 
         # Compute loss
         loss_dict = model(images, targets_)
