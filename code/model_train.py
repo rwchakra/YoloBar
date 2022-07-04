@@ -247,7 +247,7 @@ for epoch in range(NUM_EPOCHS):
 
 
 
-    torch.save(model, os.path.join(SAVE_MODEL_DIR, "visum2022.pt"))
+    torch.save(model.state_dict(), os.path.join(SAVE_MODEL_DIR, "visum2022.pt"))
 
     print(f"Model successfully saved at {os.path.join(SAVE_MODEL_DIR, 'visum2022.pt')}")
 

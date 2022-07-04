@@ -36,7 +36,9 @@ test_loader = DataLoader(test_set, batch_size=1, shuffle=False)
 
 
 # Load model
-model = torch.load(SAVED_MODEL)
+model = LoggiBarcodeDetectionModel(min_img_size=IMG_SIZE, max_img_size=IMG_SIZE)
+torch.save(model.state_dict(), SAVED_MODEL)
+model.load_state_dict(torch.load(SAVED_MODEL, map_location=DEVICE))
 model.to(DEVICE)
 
 # Put the model in evaluation mode
@@ -72,7 +74,7 @@ for image, target, image_fname in tqdm.tqdm(test_loader):
     nms_boxes = boxes[nms_indices].tolist()
     nms_scores = scores[nms_indices].tolist()
     nms_masks = masks[nms_indices]
-
+    
 
     # If there are no detections there is no need to include that entry in the predictions
     if len(nms_boxes) > 0:
@@ -89,7 +91,9 @@ for image, target, image_fname in tqdm.tqdm(test_loader):
             # Masks
             msk_fname = f"{i}.jpg"
             predictions[image_fname[0]]['masks'].append(msk_fname)
-
+            
+            
+            
             # Save masks into directory
             msk_ = np.squeeze(a=msk.detach().cpu().numpy().copy(), axis=0)
             pil_mask = Image.fromarray(msk_).convert("L")
@@ -101,7 +105,7 @@ for image, target, image_fname in tqdm.tqdm(test_loader):
 
             # Update i (idx)
             i += 1
-
+            
 
 # Save this into a JSON of predictions
 json_object = json.dumps(predictions, indent=4)
