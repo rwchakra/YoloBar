@@ -8,12 +8,18 @@ from typing import List, Optional, Tuple, Union
 
 # PyTorch Imports
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 from torchvision.transforms import functional as F
 
 
 # Torchvision Utils Source Code
 # Source: https://pytorch.org/vision/stable/_modules/torchvision/utils.html
+
+def _generate_color_palette(num_objects: int):
+    palette = torch.tensor([2 ** 25 - 1, 2 ** 15 - 1, 2 ** 21 - 1])
+    return [tuple((i * palette) % 255) for i in range(num_objects)]
+
+
 @torch.no_grad()
 def draw_bounding_boxes(
     image: torch.Tensor,
@@ -253,18 +259,17 @@ def get_transform(data_augment, img_size):
 
 
 # Visualisation tools
-def draw_results(image, masks, bboxes):
+def draw_results(image, masks, bboxes, scores=None):
 
     # The values of the input image should be uint8 between 0 and 255
-    image = torch.as_tensor(image.copy(), dtype=torch.uint8)
-    image = image.permute(2, 0, 1)
+    image = torch.as_tensor(image, dtype=torch.uint8)
+
     # Tensor of shape (num_masks, H, W) or (H, W) and dtype bool.
     masks = torch.as_tensor(masks, dtype=torch.bool)
 
     # Get image with mask on top
-    colors = ["blue" for i in range(len(masks))]
     image_w_mask = draw_segmentation_masks(
-        image=image, masks=masks, colors=colors)
+        image=image, masks=masks, alpha=0.5)
 
     # Now, let's design the bounding boxes
     # The values of the input image should be uint8 between 0 and 255
@@ -274,12 +279,11 @@ def draw_results(image, masks, bboxes):
     # Tensor of size (N, 4) containing bounding boxes in (xmin, ymin, xmax, ymax) format.
     # Note that the boxes are absolute coordinates with respect to the image.
     # In other words: 0 <= xmin < xmax < W and 0 <= ymin < ymax < H.
-    labels = ['barcode' for i in range(len(bboxes))]
     bboxes = torch.as_tensor(bboxes, dtype=torch.float32)
 
     # Get the final image
     image_results = draw_bounding_boxes(
-        image=image_w_mask, boxes=bboxes, labels=labels, colors=colors)
+        image=image_w_mask, boxes=bboxes, labels=scores)
 
     return image_results
 
@@ -391,6 +395,7 @@ class LoggiPackageDataset(Dataset):
         target["area"] = area
         target["iscrowd"] = iscrowd
         target["image_id"] = image_id
+        target["image_fname"] = image_fname
 
         return image, target
 
