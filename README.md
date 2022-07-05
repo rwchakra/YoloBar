@@ -13,13 +13,26 @@ $ git clone git@github.com:visum-summerschool/visum-competition2022.git
 ## Download database
 Before training the models, we must be sure that the database structure is built. To download the data and build the structure, run the following command.
 ```bash
+$ cd visum-competition2022
 $ bash download_data.sh
 ```
 
-## Install the requirements to set up your Python environment
-To intall the minimum requirements you just need to run
+## Create a Virtual Environment and Activate It
 ```bash
-$ pip install -r requirements.txt
+$ python -m venv venv
+$ source venv/bin/activate
+```
+
+## Install the requirements to set up your Python environment
+To intall the minimum requirements you just need to run the following
+```bash
+$ pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu113
+$ pip install -U albumentations
+$ pip install torchinfo
+$ pip install tqdm
+$ pip install tensorboard
+$ pip install -U cython
+$ pip install pycocotools
 ```
 
 ## Train model
