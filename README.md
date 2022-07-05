@@ -11,7 +11,7 @@ $ git clone git@github.com:visum-summerschool/visum-competition2022.git
 ```
 
 ## Download database
-Before training the models, we must be sure that the database structure is built. To donwload the data and build the structure, run the following command.
+Before training the models, we must be sure that the database structure is built. To download the data and build the structure, run the following command.
 ```bash
 $ bash download_data.sh
 ```
