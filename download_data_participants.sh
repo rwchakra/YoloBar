@@ -9,3 +9,6 @@ unzip data_participants.zip -d data_participants
 
 # Remove "data.zip"
 rm data_participants.zip
+
+
+echo "Database downloaded and organised."

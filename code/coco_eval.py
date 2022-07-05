@@ -1,13 +1,18 @@
+# Imports
 import copy
 import io
 from contextlib import redirect_stdout
-
 import numpy as np
-import pycocotools.mask as mask_util
+
+# PyTorch Imports
 import torch
 import torch.distributed as dist
+
+# PyCOCO Tools Imports
+import pycocotools.mask as mask_util
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
+
 
 
 def is_dist_avail_and_initialized():

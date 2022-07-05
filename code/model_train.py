@@ -7,6 +7,9 @@ import numpy as np
 import torch
 import torch.utils.data
 
+# Tensorboard: PyTorch
+from torch.utils.tensorboard import SummaryWriter
+
 # Project Imports
 from data_utilities import get_transform, collate_fn, LoggiPackageDataset
 from model_utilities import LoggiBarcodeDetectionModel, evaluate, visum2022score
@@ -14,14 +17,12 @@ from model_utilities import LoggiBarcodeDetectionModel, evaluate, visum2022score
 # Random seeds
 torch.manual_seed(42)
 
-from torch.utils.tensorboard import SummaryWriter
 
 
 # Constant variables
 BATCH_SIZE = 1
 NUM_EPOCHS = 1
 IMG_SIZE = 1024
-IOU_RANGE = np.arange(0.5, 1, 0.05)
 VAL_MAP_FREQ = 1
 
 # Directories
@@ -35,10 +36,8 @@ tb = SummaryWriter(log_dir="results/tensorboard", flush_secs=10)
 
 # Prepare data
 # First, we create two train sets with different transformations (we will use the one w/out transforms as validation set)
-dataset = LoggiPackageDataset(data_dir=DATA_DIR, training=True,
-                              transforms=get_transform(data_augment=True, img_size=IMG_SIZE))
-dataset_notransforms = LoggiPackageDataset(
-    data_dir=DATA_DIR, training=True, transforms=get_transform(data_augment=False, img_size=IMG_SIZE))
+dataset = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(data_augment=True, img_size=IMG_SIZE))
+dataset_notransforms = LoggiPackageDataset(data_dir=DATA_DIR, training=True, transforms=get_transform(data_augment=False, img_size=IMG_SIZE))
 
 # Split the dataset into train and validation sets
 indices = torch.randperm(len(dataset)).tolist()
@@ -49,23 +48,19 @@ val_set = torch.utils.data.Subset(dataset_notransforms, indices[-299:])
 
 # DataLoaders
 # Train loader
-train_loader = torch.utils.data.DataLoader(
-    train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, collate_fn=collate_fn)
+train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, collate_fn=collate_fn)
 
 # Validation loader
-val_loader = torch.utils.data.DataLoader(
-    val_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, collate_fn=collate_fn)
+val_loader = torch.utils.data.DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, collate_fn=collate_fn)
 
 
 # Define DEVICE (GPU or CPU)
-DEVICE = torch.device(
-    "cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+DEVICE = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 print(f"Using device: {DEVICE}")
 
 
 # Define model
-model = LoggiBarcodeDetectionModel(
-    min_img_size=IMG_SIZE, max_img_size=IMG_SIZE)
+model = LoggiBarcodeDetectionModel(min_img_size=IMG_SIZE, max_img_size=IMG_SIZE)
 
 # Print model summary
 model_summary = model.summary()
@@ -76,8 +71,7 @@ model.to(DEVICE)
 
 # Define an optimizer
 model_params = [p for p in model.parameters() if p.requires_grad]
-optimizer = torch.optim.SGD(model_params, lr=0.005,
-                            momentum=0.9, weight_decay=0.0005)
+optimizer = torch.optim.SGD(model_params, lr=0.005, momentum=0.9, weight_decay=0.0005)
 
 
 # Start the training and validation loops

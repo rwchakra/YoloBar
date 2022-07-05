@@ -14,25 +14,24 @@ from model_utilities import LoggiBarcodeDetectionModel, evaluate, visum2022score
 # Constant variables
 IMG_SIZE = 1024
 SAVED_MODEL = os.path.join("results", "models", "visum2022.pt")
-DATA_DIR = "data"
-DEVICE = torch.device(
-    'cuda') if torch.cuda.is_available() else torch.device('cpu')
 
-# Create test set with transforms
+# The DATA_DIR and PREDICTIONS_DIR are important to validate your submission; do not modify these variables
+DATA_DIR = "data"
+PREDICTIONS_DIR = "predictions"
+DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+
+# Create test set and test loader with transforms
 test_transforms = get_transform(data_augment=False, img_size=IMG_SIZE)
-test_set = LoggiPackageDataset(
-    data_dir=DATA_DIR, training=False, transforms=test_transforms)
-test_loader = DataLoader(test_set, batch_size=4, num_workers=2,
-                         shuffle=False, collate_fn=collate_fn)
+test_set = LoggiPackageDataset(data_dir=DATA_DIR, training=False, transforms=test_transforms)
+test_loader = DataLoader(test_set, batch_size=4, num_workers=2, shuffle=False, collate_fn=collate_fn)
 
 
 # Load model
-model = LoggiBarcodeDetectionModel(
-    min_img_size=IMG_SIZE, max_img_size=IMG_SIZE)
-
+model = LoggiBarcodeDetectionModel(min_img_size=IMG_SIZE, max_img_size=IMG_SIZE)
 checkpoint = torch.load(SAVED_MODEL, map_location=DEVICE)
 model.load_state_dict(checkpoint['model_state_dict'])
 model.to(DEVICE)
+
 
 # Get all the metric results on test set
 eval_results = evaluate(model, test_loader, DEVICE)
@@ -52,3 +51,8 @@ visum_score = visum2022score(bbox_map, segm_map)
 print(f"Detection mAP: {np.round(bbox_map, 4)}")
 print(f"Segmentation mAP: {np.round(segm_map, 4)}")
 print(f"VISUM Score: {np.round(visum_score, 4)}")
+
+
+# Save visum_score into a metric.txt file in the PREDICTIONS_DIR
+with open(os.path.join(PREDICTIONS_DIR, "metric.txt"), "w") as m:
+    m.write(f"{visum_score}")

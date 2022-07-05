@@ -1,4 +1,5 @@
 # Imports
+from tqdm import tqdm
 
 # PyTorch Imports
 import torch
@@ -6,12 +7,13 @@ import torchvision
 from torchvision.models.detection import MaskRCNN
 from torchvision.models.detection.anchor_utils import AnchorGenerator
 from torchinfo import summary
-from tqdm import tqdm
+
+# COCO Imports
 from coco_eval import CocoEvaluator, convert_to_coco_api
 
-# Model: LoggiBarcodeDetectionModel
 
 
+# Model Class: LoggiBarcodeDetectionModel
 class LoggiBarcodeDetectionModel(torch.nn.Module):
     def __init__(self, min_img_size=800, max_img_size=1333, nr_classes=2, backbone="mobilenet_v2", backbone_pretrained=True):
         super(LoggiBarcodeDetectionModel, self).__init__()
