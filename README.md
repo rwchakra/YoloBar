@@ -25,7 +25,7 @@ $ pip install -r requirements.txt
 ## Train model
 To train the baseline model, you have to run the following command (please be sure that your current directory is the root directory of the repository):
 ```bash
-$ python code/model_train
+$ python code/model_train.py
 ```
 
 This command has several constant variables you can change:
