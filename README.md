@@ -16,7 +16,13 @@ Before training the models, we must be sure that the database structure is built
 $ bash download_data.sh
 ```
 
-## Train Model
+## Install the requirements to set up your Python environment
+To intall the minimum requirements you just need to run
+```bash
+$ pip install -r requirements.txt
+```
+
+## Train model
 To train the baseline model, you have to run the following command (please be sure that your current directory is the root directory of the repository):
 ```bash
 $ python code/model_train
@@ -30,4 +36,17 @@ IMG_SIZE - the image size you will use (H, W)
 VAL_MAP_FREQ - the frequency you want the training loop to print the mAP values
 ```
 
+## Creating and changing your own models
+To do this, you can go to [model_utilities.py](code/model_utilities.py) and edit the `LoggiBarcodeDetectionModel`.
 
+## Plot results
+If you want to check and visualise some of you results on validation (or training) you can run the following command:
+```bash
+$ python code/plot_results.py
+```
+
+## Creating a submission
+After the training of your models you have to create a submission file. This file will be .ZIP file containing: 1) the `code/` directory, the `results/models/visum2022.pt` directory, and the (Dockerfile)[Dockerfile]. Be sure that you fill the requirement needs of your Dockerfile, and the run the following command:
+```bash
+$ bash create_submission_file.sh
+```
