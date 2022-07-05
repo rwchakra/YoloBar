@@ -46,7 +46,7 @@ $ python code/plot_results.py
 ```
 
 ## Creating a submission
-After the training of your models you have to create a submission file. This file will be .ZIP file containing: 1) the `code/` directory, the `results/models/visum2022.pt` directory, and the (Dockerfile)[Dockerfile]. Be sure that you fill the requirement needs of your Dockerfile, and the run the following command:
+After the training of your models you have to create a submission file. This file will be .ZIP file containing: 1) the `code/` directory, the `results/models/visum2022.pt` directory, and the `Dockerfile`. Be sure that you fill the requirement needs of your Dockerfile, and the run the following command:
 ```bash
 $ bash create_submission_file.sh
 ```
