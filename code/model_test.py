@@ -27,7 +27,7 @@ test_loader = DataLoader(test_set, batch_size=4, shuffle=False, collate_fn=colla
 
 
 # Load model
-model = LoggiBarcodeDetectionModel(min_img_size=IMG_SIZE, max_img_size=IMG_SIZE, backbone_pretrained=True)
+model = LoggiBarcodeDetectionModel(min_img_size=IMG_SIZE, max_img_size=IMG_SIZE, backbone_pretrained=False)
 checkpoint = torch.load(SAVED_MODEL, map_location=DEVICE)
 model.load_state_dict(checkpoint['model_state_dict'])
 model.to(DEVICE)
