@@ -23,7 +23,7 @@ DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 # Create test set and test loader with transforms
 test_transforms = get_transform(data_augment=False, img_size=IMG_SIZE)
 test_set = LoggiPackageDataset(data_dir=DATA_DIR, training=False, transforms=test_transforms)
-test_loader = DataLoader(test_set, batch_size=4, num_workers=2, shuffle=False, collate_fn=collate_fn)
+test_loader = DataLoader(test_set, batch_size=4, num_workers=1, shuffle=False, collate_fn=collate_fn)
 
 
 # Load model
