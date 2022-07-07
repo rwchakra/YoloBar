@@ -7,6 +7,7 @@ import torchvision
 from torchvision.models.detection import MaskRCNN
 from torchvision.models.detection.anchor_utils import AnchorGenerator
 from torchinfo import summary
+from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 
 # COCO Imports
 from coco_eval import CocoEvaluator, convert_to_coco_api
@@ -53,13 +54,16 @@ class LoggiBarcodeDetectionModel(torch.nn.Module):
         # You can add your backbones here...
         # elif self.backbone == "your_backbone_name"
         elif self.backbone == "resnet101":
-            backbone_ = torchvision.models.resnet101(pretrained=self.backbone_pretrained)
-            modules = list(backbone_.children())[:-1]
-            backbone_ = torch.nn.Sequential(*modules)
-            backbone_.out_channels = 2048
+            print("Using resnet backbone..")
+            backbone_ = resnet_fpn_backbone('resnext101_32x8d', pretrained=True, trainable_layers=0)
+            # modules = list(backbone_.children())[:-1]
+            # backbone_ = torch.nn.Sequential(*modules)
+            # for param in backbone_.parameters():
+            # param.requires_grad = False
+            backbone_.out_channels = 256
 
             anchor_generator = AnchorGenerator(
-                sizes=((32, 64, 128, 256, 512),), aspect_ratios=((0.5, 1.0, 2.0),))
+                sizes=((32, 64, 128, 256, 512)), aspect_ratios=((0.5, 1.0, 2.0)))
 
             # Let's define what are the feature maps that we will use to perform the region of interest cropping, as well as the size of the crop after rescaling
             # If your backbone returns a Tensor, featmap_names is expected to be ['0']
