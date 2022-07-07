@@ -15,7 +15,7 @@ from coco_eval import CocoEvaluator, convert_to_coco_api
 
 # Model Class: LoggiBarcodeDetectionModel
 class LoggiBarcodeDetectionModel(torch.nn.Module):
-    def __init__(self, min_img_size=800, max_img_size=1333, nr_classes=2, backbone="mobilenet_v2", backbone_pretrained=True):
+    def __init__(self, min_img_size=800, max_img_size=1333, nr_classes=2, backbone="resnet101", backbone_pretrained=True):
         super(LoggiBarcodeDetectionModel, self).__init__()
 
         # Init variables
@@ -52,6 +52,27 @@ class LoggiBarcodeDetectionModel(torch.nn.Module):
 
         # You can add your backbones here...
         # elif self.backbone == "your_backbone_name"
+        elif self.backbone == "resnet101":
+            backbone_ = torchvision.models.resnet101(pretrained=self.backbone_pretrained)
+            modules = list(backbone_.children())[:-1]
+            backbone_ = torch.nn.Sequential(*modules)
+            backbone_.out_channels = 2048
+
+            anchor_generator = AnchorGenerator(
+                sizes=((32, 64, 128, 256, 512),), aspect_ratios=((0.5, 1.0, 2.0),))
+
+            # Let's define what are the feature maps that we will use to perform the region of interest cropping, as well as the size of the crop after rescaling
+            # If your backbone returns a Tensor, featmap_names is expected to be ['0']
+            # More generally, the backbone should return an OrderedDict[Tensor], and in featmap_names you can choose which feature maps to use
+            roi_pooler = torchvision.ops.MultiScaleRoIAlign(
+                featmap_names=['0'], output_size=7, sampling_ratio=2)
+            mask_roi_pooler = torchvision.ops.MultiScaleRoIAlign(
+                featmap_names=['0'], output_size=14, sampling_ratio=2)
+
+            # Put the pieces together inside a MaskRCNN model
+            self.model = MaskRCNN(backbone_, min_size=min_img_size, max_size=max_img_size, num_classes=2,
+                                  rpn_anchor_generator=anchor_generator, box_roi_pool=roi_pooler,
+                                  mask_roi_pool=mask_roi_pooler)
 
         return
 

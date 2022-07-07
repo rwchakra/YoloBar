@@ -48,10 +48,10 @@ val_set = torch.utils.data.Subset(dataset_notransforms, indices[-299:])
 
 # DataLoaders
 # Train loader
-train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, collate_fn=collate_fn)
+train_loader = torch.utils.data.DataLoader(train_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=0, collate_fn=collate_fn)
 
 # Validation loader
-val_loader = torch.utils.data.DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=4, collate_fn=collate_fn)
+val_loader = torch.utils.data.DataLoader(val_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=0, collate_fn=collate_fn)
 
 
 # Define DEVICE (GPU or CPU)
