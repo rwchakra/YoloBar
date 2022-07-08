@@ -1,0 +1,57 @@
+numpy>=1.17.4
+matplotlib>=3.1.2
+tensorboard>=2.2.0
+#pycocotools==2.0.0
+jupyter==1.0.0
+multiprocess==0.70.9
+pandas==0.25.3
+opencv-python==4.1.2.30
+albumentations==0.4.3
+easydict==1.9
+# onnxconverter-common
+# onnxruntime-gpu==1.2.0
+pytest
+coverage==5.0.3
+seaborn==0.10.0
+tqdm==4.43.0
+# image-classifiers==1.0.0
+annoy==1.16.3
+pyamg==4.0.0
+# voila==0.2.3
+scikit-image==0.17.2
+xgboost==1.1.1
+tensorboard_plugin_profile
+scikit-learn
+eli5==0.10.1
+shapely==1.7.1
+isort
+streamlit
+papermill
+pretty-errors
+mlflow
+# protobuf==3.13.0
+black
+fastapi
+uvicorn
+grpcio==1.41.1
+grpcio-tools==1.41.1
+protobuf==3.15.6
+neptune-client>=0.10.10
+# pip install fastapi
+# pip install uvicorn
+#imgviz
+
+#conda install cudnn=7.6
+#conda install -c anaconda cudatoolkit=10.1 
+#uvicorn --host 0.0.0.0 main:app --reload
+# mlflow ui --host=0.0.0.0 --port=5000
+# tensorboard --logdir=./output --host=0.0.0.0 --port=6006
+# nohup uvicorn --host 0.0.0.0 main:app --reload &>/dev/null &
+# nohup tensorboard --logdir=./output --host=0.0.0.0 --port=6006 &>/dev/null &
+# nohup python src/maskrcnn/train_net.py &>/dev/null &
+
+
+
+# python -m pip install detectron2 -f https://dl.fbaipublicfiles.com/detectron2/wheels/cu101/torch1.8/index.html
+
+# python -m pip install detectron2==0.5 -f   https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.9/index.html
